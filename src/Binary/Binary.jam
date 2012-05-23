@@ -1,0 +1,614 @@
+
+namespace Rbrx.Binary
+{
+	/// <summary>Returns the number of bits set in the given integer</summary>
+	public static fcn NbitsSet(this uint x) -> int
+	{
+		if (x < 256) {
+			return NbitsSet((uint8)x);
+		} else {
+			return NbitsSet((uint8)(x & 0xffu))
+				 + NbitsSet((uint8)((x & 0xff00u) >> 8))
+				 + NbitsSet((uint8)((x & 0xff0000u) >> 16))
+				 + NbitsSet((uint8)((x & 0xff000000u) >> 24));
+		}
+	}
+	/// <summary>Returns the number of bits set in the given integer</summary>
+	public static fcn NbitsSet(this uint64 x) -> int
+	{
+		if (x < 256) {
+			return NbitsSet((uint8)x);
+		} else {
+			return NbitsSet((uint8)(x & 0xffu))
+				 + NbitsSet((uint8)((x & 0xff00u) >> 8))
+				 + NbitsSet((uint8)((x & 0xff0000u) >> 16))
+				 + NbitsSet((uint8)((x & 0xff000000u) >> 24))
+				 + NbitsSet((uint8)((x & 0xff00000000u) >> 32))
+				 + NbitsSet((uint8)((x & 0xff0000000000u) >> 40))
+				 + NbitsSet((uint8)((x & 0xff000000000000u) >> 48))
+				 + NbitsSet((uint8)((x & 0xff00000000000000u) >> 56));
+		}
+	}
+	/*/// <summary>Returns the number of bits set in the given integer</summary>
+	public static fcn NbitsSet[U = Vector[int]](this uint[] x) -> U {
+		readonly var maxIx = x.Size(1) - 1;
+		var ret = U(maxIx + 1);
+		for i in 0 : maxIx {
+			ret(i) = NbitsSet(x(i));
+		}
+		return ret;
+	}*/
+	/// <summary>Returns the number of bits set in the given integer</summary>
+	public static fcn NbitsSet(this uint8 x) -> int
+	{
+		switch (x) {
+			case 0 => return 0;
+			case 1 => return 1;
+			case 2 => return 1;
+			case 3 => return 2;
+			case 4 => return 1;
+			case 5 => return 2;
+			case 6 => return 2;
+			case 7 => return 3;
+			case 8 => return 1;
+			case 9 => return 2;
+			case 10 => return 2;
+			case 11 => return 3;
+			case 12 => return 2;
+			case 13 => return 3;
+			case 14 => return 3;
+			case 15 => return 4;
+			case 16 => return 1;
+			case 17 => return 2;
+			case 18 => return 2;
+			case 19 => return 3;
+			case 20 => return 2;
+			case 21 => return 3;
+			case 22 => return 3;
+			case 23 => return 4;
+			case 24 => return 2;
+			case 25 => return 3;
+			case 26 => return 3;
+			case 27 => return 4;
+			case 28 => return 3;
+			case 29 => return 4;
+			case 30 => return 4;
+			case 31 => return 5;
+			case 32 => return 1;
+			case 33 => return 2;
+			case 34 => return 2;
+			case 35 => return 3;
+			case 36 => return 2;
+			case 37 => return 3;
+			case 38 => return 3;
+			case 39 => return 4;
+			case 40 => return 2;
+			case 41 => return 3;
+			case 42 => return 3;
+			case 43 => return 4;
+			case 44 => return 3;
+			case 45 => return 4;
+			case 46 => return 4;
+			case 47 => return 5;
+			case 48 => return 2;
+			case 49 => return 3;
+			case 50 => return 3;
+			case 51 => return 4;
+			case 52 => return 3;
+			case 53 => return 4;
+			case 54 => return 4;
+			case 55 => return 5;
+			case 56 => return 3;
+			case 57 => return 4;
+			case 58 => return 4;
+			case 59 => return 5;
+			case 60 => return 4;
+			case 61 => return 5;
+			case 62 => return 5;
+			case 63 => return 6;
+			case 64 => return 1;
+			case 65 => return 2;
+			case 66 => return 2;
+			case 67 => return 3;
+			case 68 => return 2;
+			case 69 => return 3;
+			case 70 => return 3;
+			case 71 => return 4;
+			case 72 => return 2;
+			case 73 => return 3;
+			case 74 => return 3;
+			case 75 => return 4;
+			case 76 => return 3;
+			case 77 => return 4;
+			case 78 => return 4;
+			case 79 => return 5;
+			case 80 => return 2;
+			case 81 => return 3;
+			case 82 => return 3;
+			case 83 => return 4;
+			case 84 => return 3;
+			case 85 => return 4;
+			case 86 => return 4;
+			case 87 => return 5;
+			case 88 => return 3;
+			case 89 => return 4;
+			case 90 => return 4;
+			case 91 => return 5;
+			case 92 => return 4;
+			case 93 => return 5;
+			case 94 => return 5;
+			case 95 => return 6;
+			case 96 => return 2;
+			case 97 => return 3;
+			case 98 => return 3;
+			case 99 => return 4;
+			case 100 => return 3;
+			case 101 => return 4;
+			case 102 => return 4;
+			case 103 => return 5;
+			case 104 => return 3;
+			case 105 => return 4;
+			case 106 => return 4;
+			case 107 => return 5;
+			case 108 => return 4;
+			case 109 => return 5;
+			case 110 => return 5;
+			case 111 => return 6;
+			case 112 => return 3;
+			case 113 => return 4;
+			case 114 => return 4;
+			case 115 => return 5;
+			case 116 => return 4;
+			case 117 => return 5;
+			case 118 => return 5;
+			case 119 => return 6;
+			case 120 => return 4;
+			case 121 => return 5;
+			case 122 => return 5;
+			case 123 => return 6;
+			case 124 => return 5;
+			case 125 => return 6;
+			case 126 => return 6;
+			case 127 => return 7;
+			case 128 => return 1;
+			case 129 => return 2;
+			case 130 => return 2;
+			case 131 => return 3;
+			case 132 => return 2;
+			case 133 => return 3;
+			case 134 => return 3;
+			case 135 => return 4;
+			case 136 => return 2;
+			case 137 => return 3;
+			case 138 => return 3;
+			case 139 => return 4;
+			case 140 => return 3;
+			case 141 => return 4;
+			case 142 => return 4;
+			case 143 => return 5;
+			case 144 => return 2;
+			case 145 => return 3;
+			case 146 => return 3;
+			case 147 => return 4;
+			case 148 => return 3;
+			case 149 => return 4;
+			case 150 => return 4;
+			case 151 => return 5;
+			case 152 => return 3;
+			case 153 => return 4;
+			case 154 => return 4;
+			case 155 => return 5;
+			case 156 => return 4;
+			case 157 => return 5;
+			case 158 => return 5;
+			case 159 => return 6;
+			case 160 => return 2;
+			case 161 => return 3;
+			case 162 => return 3;
+			case 163 => return 4;
+			case 164 => return 3;
+			case 165 => return 4;
+			case 166 => return 4;
+			case 167 => return 5;
+			case 168 => return 3;
+			case 169 => return 4;
+			case 170 => return 4;
+			case 171 => return 5;
+			case 172 => return 4;
+			case 173 => return 5;
+			case 174 => return 5;
+			case 175 => return 6;
+			case 176 => return 3;
+			case 177 => return 4;
+			case 178 => return 4;
+			case 179 => return 5;
+			case 180 => return 4;
+			case 181 => return 5;
+			case 182 => return 5;
+			case 183 => return 6;
+			case 184 => return 4;
+			case 185 => return 5;
+			case 186 => return 5;
+			case 187 => return 6;
+			case 188 => return 5;
+			case 189 => return 6;
+			case 190 => return 6;
+			case 191 => return 7;
+			case 192 => return 2;
+			case 193 => return 3;
+			case 194 => return 3;
+			case 195 => return 4;
+			case 196 => return 3;
+			case 197 => return 4;
+			case 198 => return 4;
+			case 199 => return 5;
+			case 200 => return 3;
+			case 201 => return 4;
+			case 202 => return 4;
+			case 203 => return 5;
+			case 204 => return 4;
+			case 205 => return 5;
+			case 206 => return 5;
+			case 207 => return 6;
+			case 208 => return 3;
+			case 209 => return 4;
+			case 210 => return 4;
+			case 211 => return 5;
+			case 212 => return 4;
+			case 213 => return 5;
+			case 214 => return 5;
+			case 215 => return 6;
+			case 216 => return 4;
+			case 217 => return 5;
+			case 218 => return 5;
+			case 219 => return 6;
+			case 220 => return 5;
+			case 221 => return 6;
+			case 222 => return 6;
+			case 223 => return 7;
+			case 224 => return 3;
+			case 225 => return 4;
+			case 226 => return 4;
+			case 227 => return 5;
+			case 228 => return 4;
+			case 229 => return 5;
+			case 230 => return 5;
+			case 231 => return 6;
+			case 232 => return 4;
+			case 233 => return 5;
+			case 234 => return 5;
+			case 235 => return 6;
+			case 236 => return 5;
+			case 237 => return 6;
+			case 238 => return 6;
+			case 239 => return 7;
+			case 240 => return 4;
+			case 241 => return 5;
+			case 242 => return 5;
+			case 243 => return 6;
+			case 244 => return 5;
+			case 245 => return 6;
+			case 246 => return 6;
+			case 247 => return 7;
+			case 248 => return 5;
+			case 249 => return 6;
+			case 250 => return 6;
+			case 251 => return 7;
+			case 252 => return 6;
+			case 253 => return 7;
+			case 254 => return 7;
+			case 255 => return 8;
+			default => throw Core.Exception();
+		}
+	}
+	
+	/// <summary>Returns the 0-based index of the first bit set in the given integer, or -1 if none was set</summary>
+	public static fcn FirstBitSet(this uint x) -> int
+	{
+		if (x < 256) {
+			return FirstBitSet((uint8)x);
+		} else {
+			int ret;
+			if ((ret = FirstBitSet((uint8)(x & 0xffu))) > -1) {
+				return ret;
+			} else if ((ret = FirstBitSet((uint8)((x & 0xff00u) >> 8))) > -1) {
+				return 8 + ret;
+			} else if ((ret = FirstBitSet((uint8)((x & 0xff0000u) >> 16))) > -1) {
+				return 16 + ret;
+			} else {
+				return 24 + FirstBitSet((uint8)((x & 0xff000000u) >> 24));
+			}
+		}
+	}
+	/// <summary>Returns the 0-based index of the first bit set in the given integer, or -1 if none was set</summary>
+	public static fcn FirstBitSet(this ulong x) -> int
+	{
+		if (x < 256) {
+			return FirstBitSet((uint8)x);
+		} else {
+			int ret;
+			if ((ret = FirstBitSet((uint8)(x & 0xffu))) > -1) {
+				return ret;
+			} else if ((ret = FirstBitSet((uint8)((x & 0xff00u) >> 8))) > -1) {
+				return 8 + ret;
+			} else if ((ret = FirstBitSet((uint8)((x & 0xff0000u) >> 16))) > -1) {
+				return 16 + ret;
+			} else if ((ret = FirstBitSet((uint8)((x & 0xff000000u) >> 24))) > -1) {
+				return 24 + ret;
+			} else if ((ret = FirstBitSet((uint8)((x & 0xff00000000u) >> 32))) > -1) {
+				return 32 + ret;
+			} else if ((ret = FirstBitSet((uint8)((x & 0xff0000000000u) >> 40))) > -1) {
+				return 40 + ret;
+			} else if ((ret = FirstBitSet((uint8)((x & 0xff000000000000u) >> 48))) > -1) {
+				return 48 + ret;
+			} else {
+				return 56 + FirstBitSet((uint8)((x & 0xff00000000000000u) >> 56));
+			}
+		}
+	}
+	/// <summary>Returns the 0-based index of the first bit set in the given integer, or -1 if none was set</summary>
+	public static fcn FirstBitSet(this uint8 x) -> int
+	{
+		switch (x) {
+			case 0 => return -1;
+			case 1 => return 0;
+			case 2 => return 1;
+			case 3 => return 0;
+			case 4 => return 2;
+			case 5 => return 0;
+			case 6 => return 1;
+			case 7 => return 0;
+			case 8 => return 3;
+			case 9 => return 0;
+			case 10 => return 1;
+			case 11 => return 0;
+			case 12 => return 2;
+			case 13 => return 0;
+			case 14 => return 1;
+			case 15 => return 0;
+			case 16 => return 4;
+			case 17 => return 0;
+			case 18 => return 1;
+			case 19 => return 0;
+			case 20 => return 2;
+			case 21 => return 0;
+			case 22 => return 1;
+			case 23 => return 0;
+			case 24 => return 3;
+			case 25 => return 0;
+			case 26 => return 1;
+			case 27 => return 0;
+			case 28 => return 2;
+			case 29 => return 0;
+			case 30 => return 1;
+			case 31 => return 0;
+			case 32 => return 5;
+			case 33 => return 0;
+			case 34 => return 1;
+			case 35 => return 0;
+			case 36 => return 2;
+			case 37 => return 0;
+			case 38 => return 1;
+			case 39 => return 0;
+			case 40 => return 3;
+			case 41 => return 0;
+			case 42 => return 1;
+			case 43 => return 0;
+			case 44 => return 2;
+			case 45 => return 0;
+			case 46 => return 1;
+			case 47 => return 0;
+			case 48 => return 4;
+			case 49 => return 0;
+			case 50 => return 1;
+			case 51 => return 0;
+			case 52 => return 2;
+			case 53 => return 0;
+			case 54 => return 1;
+			case 55 => return 0;
+			case 56 => return 3;
+			case 57 => return 0;
+			case 58 => return 1;
+			case 59 => return 0;
+			case 60 => return 2;
+			case 61 => return 0;
+			case 62 => return 1;
+			case 63 => return 0;
+			case 64 => return 6;
+			case 65 => return 0;
+			case 66 => return 1;
+			case 67 => return 0;
+			case 68 => return 2;
+			case 69 => return 0;
+			case 70 => return 1;
+			case 71 => return 0;
+			case 72 => return 3;
+			case 73 => return 0;
+			case 74 => return 1;
+			case 75 => return 0;
+			case 76 => return 2;
+			case 77 => return 0;
+			case 78 => return 1;
+			case 79 => return 0;
+			case 80 => return 4;
+			case 81 => return 0;
+			case 82 => return 1;
+			case 83 => return 0;
+			case 84 => return 2;
+			case 85 => return 0;
+			case 86 => return 1;
+			case 87 => return 0;
+			case 88 => return 3;
+			case 89 => return 0;
+			case 90 => return 1;
+			case 91 => return 0;
+			case 92 => return 2;
+			case 93 => return 0;
+			case 94 => return 1;
+			case 95 => return 0;
+			case 96 => return 5;
+			case 97 => return 0;
+			case 98 => return 1;
+			case 99 => return 0;
+			case 100 => return 2;
+			case 101 => return 0;
+			case 102 => return 1;
+			case 103 => return 0;
+			case 104 => return 3;
+			case 105 => return 0;
+			case 106 => return 1;
+			case 107 => return 0;
+			case 108 => return 2;
+			case 109 => return 0;
+			case 110 => return 1;
+			case 111 => return 0;
+			case 112 => return 4;
+			case 113 => return 0;
+			case 114 => return 1;
+			case 115 => return 0;
+			case 116 => return 2;
+			case 117 => return 0;
+			case 118 => return 1;
+			case 119 => return 0;
+			case 120 => return 3;
+			case 121 => return 0;
+			case 122 => return 1;
+			case 123 => return 0;
+			case 124 => return 2;
+			case 125 => return 0;
+			case 126 => return 1;
+			case 127 => return 0;
+			case 128 => return 7;
+			case 129 => return 0;
+			case 130 => return 1;
+			case 131 => return 0;
+			case 132 => return 2;
+			case 133 => return 0;
+			case 134 => return 1;
+			case 135 => return 0;
+			case 136 => return 3;
+			case 137 => return 0;
+			case 138 => return 1;
+			case 139 => return 0;
+			case 140 => return 2;
+			case 141 => return 0;
+			case 142 => return 1;
+			case 143 => return 0;
+			case 144 => return 4;
+			case 145 => return 0;
+			case 146 => return 1;
+			case 147 => return 0;
+			case 148 => return 2;
+			case 149 => return 0;
+			case 150 => return 1;
+			case 151 => return 0;
+			case 152 => return 3;
+			case 153 => return 0;
+			case 154 => return 1;
+			case 155 => return 0;
+			case 156 => return 2;
+			case 157 => return 0;
+			case 158 => return 1;
+			case 159 => return 0;
+			case 160 => return 5;
+			case 161 => return 0;
+			case 162 => return 1;
+			case 163 => return 0;
+			case 164 => return 2;
+			case 165 => return 0;
+			case 166 => return 1;
+			case 167 => return 0;
+			case 168 => return 3;
+			case 169 => return 0;
+			case 170 => return 1;
+			case 171 => return 0;
+			case 172 => return 2;
+			case 173 => return 0;
+			case 174 => return 1;
+			case 175 => return 0;
+			case 176 => return 4;
+			case 177 => return 0;
+			case 178 => return 1;
+			case 179 => return 0;
+			case 180 => return 2;
+			case 181 => return 0;
+			case 182 => return 1;
+			case 183 => return 0;
+			case 184 => return 3;
+			case 185 => return 0;
+			case 186 => return 1;
+			case 187 => return 0;
+			case 188 => return 2;
+			case 189 => return 0;
+			case 190 => return 1;
+			case 191 => return 0;
+			case 192 => return 6;
+			case 193 => return 0;
+			case 194 => return 1;
+			case 195 => return 0;
+			case 196 => return 2;
+			case 197 => return 0;
+			case 198 => return 1;
+			case 199 => return 0;
+			case 200 => return 3;
+			case 201 => return 0;
+			case 202 => return 1;
+			case 203 => return 0;
+			case 204 => return 2;
+			case 205 => return 0;
+			case 206 => return 1;
+			case 207 => return 0;
+			case 208 => return 4;
+			case 209 => return 0;
+			case 210 => return 1;
+			case 211 => return 0;
+			case 212 => return 2;
+			case 213 => return 0;
+			case 214 => return 1;
+			case 215 => return 0;
+			case 216 => return 3;
+			case 217 => return 0;
+			case 218 => return 1;
+			case 219 => return 0;
+			case 220 => return 2;
+			case 221 => return 0;
+			case 222 => return 1;
+			case 223 => return 0;
+			case 224 => return 5;
+			case 225 => return 0;
+			case 226 => return 1;
+			case 227 => return 0;
+			case 228 => return 2;
+			case 229 => return 0;
+			case 230 => return 1;
+			case 231 => return 0;
+			case 232 => return 3;
+			case 233 => return 0;
+			case 234 => return 1;
+			case 235 => return 0;
+			case 236 => return 2;
+			case 237 => return 0;
+			case 238 => return 1;
+			case 239 => return 0;
+			case 240 => return 4;
+			case 241 => return 0;
+			case 242 => return 1;
+			case 243 => return 0;
+			case 244 => return 2;
+			case 245 => return 0;
+			case 246 => return 1;
+			case 247 => return 0;
+			case 248 => return 3;
+			case 249 => return 0;
+			case 250 => return 1;
+			case 251 => return 0;
+			case 252 => return 2;
+			case 253 => return 0;
+			case 254 => return 1;
+			case 255 => return 0;
+			default => throw Core.Exception();
+		}
+	}
+}
+
+

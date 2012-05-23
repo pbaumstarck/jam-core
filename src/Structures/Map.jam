@@ -1,0 +1,89 @@
+
+namespace Rbrx.Structures
+{
+	/// <summary>An associate array class that builds a one-to-one mapping from keys to values. Uses a red--black tree behind the scenes. The 'Comparator'
+	/// class is used to determine the total weak ordering between the keys (to decide 'a < b'), but the type 'Key' is expected to implement an '==' comparison
+	/// with itself. 'Value' is also expected to implement the '==' comparison with itself for the 'ContainsValue' operation.</summary>
+	/// <typeparam name="Comparator">The class describing the comparison object to use. Must implement 'KLess[Key]', which defined a single member
+	/// 'fcn Compare(Key a, Key b) -> bool'. The default 'Less[Key]' simple applied the '<' operator, which will work for numeric types or user-defined overloads.</typeparam>
+	public class Map[Key, Value, Comparator : KLess[Key] = Less[Key]] : AssociateArray[Key, Value, Comparator]
+	{
+		/// <summary>Adds a key--value pair to the map</summary>
+		public fcn Add(Key key, Value value)
+		{
+			// This does proper collision error reporting
+			var node = InsertNode(key, value);
+		}
+		
+		/// <summary>Indexer-style access to the map</summary>
+		public Value this(Key key)
+		{
+			get
+			{
+				var node = FindNode(key);
+				throw Core.Exception("The given key was not present in the map: " + key) if node == null;
+				return node._Value;
+			}
+			set
+			{
+				var node = FindNode(key);
+				if (node == null) {
+					node = InsertNode(key, value);
+				}
+				node._Value = value;
+			}
+		}
+		
+		/// <summary>Whether the map contains any of the specified keys</summary>
+		/// <returns>'true' if any of the keys are found; 'false' otherwise</returns>
+		public fcn ContainsKey(Key keys+) -> bool
+		{
+			for key in keys {
+				if (FindNode(key) != null) {
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		/// <summary>Try to get a value for the key out of the map while returning a success bool</summary>
+		public fcn TryGetValue(Key key, Value &value) -> bool
+		{
+			var node = FindNode(key);
+			if (node != null) {
+				value = node._Value;
+				return true;
+			} else {
+				return false;
+			}
+		}
+		
+		/// <summary>Whether the associative array contains any of the specified values</summary>
+		public fcn ContainsValue(Value values+) -> bool
+		{
+			if (root == null) {
+				return false;
+			} else {
+				return SubContainsValue(root, values);
+			}
+		}
+		
+		/// <summary>An enumerator over the keys and values of the map</summary>
+		public enumerator fcn Values() -> (Key, Value)
+		{
+			if (root == null) {
+				return break;
+			} else {
+				// Collect all the nodes into a linear array, then return its elements. This avoids needing an internal enumerator which can confound C++ translation.
+				var nodes = Jam.Malloc[RedBlackNode[Key, Value]](Count);
+				int ix = 0;
+				GetNodes(root, nodes, ix);
+				for node in nodes {
+					return node._Key, node._Value;
+				}
+			}
+		}
+	}
+}
+
+

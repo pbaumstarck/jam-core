@@ -1,0 +1,52 @@
+
+namespace Rbrx.Structures
+{
+	/// <summary>A set class that stores a set of unique keys using a red--black tree behind the scenes. The 'Comparator' class is used to determine the total weak
+	/// ordering between the keys (to decide 'a < b'), but the type 'Key' is expected to implement an '==' comparison with itself.</summary>
+	/// <typeparam name="Comparator">The class describing the comparison object to use. Must implement 'KLess[Key]', which defined a single member
+	/// 'fcn Compare(Key a, Key b) -> bool'. The default 'Less[Key]' simple applied the '<' operator, which will work for numeric types or user-defined overloads.</typeparam>
+	public class Set[Key, Comparator : KLess[Key] = Less[Key]] : AssociateArray[Key, int, Comparator]
+	{
+		/// <summary>Adds an item to the set</summary>
+		/// <returns>'true' if the item was added; 'false' if it was already present</summary>
+		public fcn Add(Key key) -> bool
+		{
+			var node = FindNode(key);
+			if (node != null) {
+				return false;
+			} else {
+				node = InsertNode(key, 0);
+				return true;
+			}
+		}
+		
+		/// <summary>Whether the set contains any of the specified keys</summary>
+		public fcn Contains(Key keys+) -> bool
+		{
+			for key in keys {
+				if (FindNode(key) != null) {
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		/// <summary>An enumerator over the items of the set</summary>
+		public enumerator fcn Values() -> (Key)
+		{
+			if (root == null) {
+				return break;
+			} else {
+				// Collect all the nodes into a linear array, then return its elements. This avoids needing an internal enumerator which can confound C++ translation.
+				var nodes = Jam.Malloc[RedBlackNode[Key, int]](Count);
+				int ix = 0;
+				GetNodes(root, nodes, ix);
+				for node in nodes {
+					return node._Key;
+				}
+			}
+		}
+	}
+}
+
+

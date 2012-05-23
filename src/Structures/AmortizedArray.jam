@@ -1,0 +1,52 @@
+
+namespace Rbrx.Structures
+{
+	/// <summary>A structure that provides amortized constant time allocation of a dynamic array of 'T's</summary>
+	/// <valueparam name="DoublingSize">The size that, until the array reaches it, we double its size in dynamic allocation.
+	/// After this we add 'DoublingSize' in pieces.</valueparam>
+	public abstract class AmortizedArray[T, int DoublingSize = 1024]
+	{
+		/// <summary>The values of the matrix</summary>
+		inline protected primitive T[] values { get; private set; }
+		/// <summary>The number of allocated elements in 'values'</summary>
+		inline protected int allocNumel { get; private set; }
+		/// <summary>The number of items in 'values' that we are using. 'protected' so that base classes can modify it</summary>
+		protected int numel;
+		
+		
+		// Constructor
+		/// <summary>Constructor with a capacity to allocate for the array</summary>
+		protected fcn new(int capacity)
+		{
+			numel = 0;
+			values = Jam.Malloc[T](allocNumel = capacity);
+		}
+		
+		
+		/// <summary>Ensure that the 'values' array is allocated up to the specified size</summary>
+		protected fcn EnsureSize(int newSize)
+		{
+			if (allocNumel >= newSize) {
+				// That was easy
+				numel = newSize;
+			} else {
+				var newAlloc = allocNumel;
+				while (newAlloc < DoublingSize && newAlloc < newSize) {
+					newAlloc <<= 1;
+				}
+				while (newAlloc < newSize) {
+					newAlloc += DoublingSize;
+				}
+				var newValues = Jam.Malloc[T](newAlloc);
+				// Copy over the old 'numel' elements
+				Jam.Memcpy[T](newValues, values, numel);
+				// Update our members
+				this.values = newValues;
+				allocNumel = newAlloc;
+				numel = newSize;
+			}
+		}
+	}
+}
+
+

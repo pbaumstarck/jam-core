@@ -1,0 +1,361 @@
+
+namespace Rbrx
+{
+	/// <summary>Determines whether a character is whitespace or not</summary>
+	public static fcn IsWhitespace(char ch) -> bool
+	{
+		return ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r';
+	}
+	/// <summary>Converts a numeric 'char' in the range '0' to '9' into an integer without error checking</summary>
+	internal static fcn GetNumber(char ch) -> int
+	{
+		if (ch >= '0' && ch <= '9') {
+			return (int)ch - (int) '0';
+		}
+		return -1;
+	}
+
+	/// <summary>Parses an 'int32' value from a string</summary>
+	public static fcn ParseInt32(string str) -> int
+	{
+		(success, value) = ParseInteger[long](str, true, true);
+		if (value > Jam.Int32.MaxValue || value < Jam.Int32.MinValue) {
+			throw Core.Exception("Parsed integer value was out of range");
+		}
+		return (int)value;
+	}
+	/// <summary>Parses a 'uint32' value from a string</summary>
+	public static fcn ParseUInt32(string str) -> uint
+	{
+		(success, value) = ParseInteger[ulong](str, false, true);
+		if (value > Jam.UInt32.MaxValue || value < Jam.UInt32.MinValue) {
+			throw Core.Exception("Parsed integer value was out of range");
+		}
+		return (uint)value;
+	}
+	/// <summary>Parses a 'bool' value from a string by searching for either a "True" or a "False" (via a case-insensitive match)</summary>
+	public static fcn ParseBool(string str, bool throwException = true) -> (bool success, bool result)
+	{
+		if (str == null) {
+			throw Core.FormatException("Input string cannot be null") if throwException;
+			return false, false;
+		}
+		int ix = 0;
+		// Skip leading whitespace
+		for (; ix < str.Length && IsWhitespace(str(ix)); ++ix);
+		if (ix >= str.Length) {
+			throw Core.FormatException("Input string cannot be empty") if throwException;
+			return false, false;
+		}
+		ch = str(ix);
+		// Select which string to compare against from hereon in
+		string compare;
+		if (ch == 't' || ch == 'T') {
+			result = true;
+			compare = Jam.Bool.TrueString;
+		} else if (ch == 'f' || ch == 'F') {
+			result = false;
+			compare = Jam.Bool.FalseString;
+		} else {
+			throw Core.FormatException("Invalid input string for parsing to a 'bool'") if throwException;
+			return false, false;
+		}
+		// Check the lengths to see that we have enough characters left
+		if (str.Length - ix < compare.Length) {
+			throw Core.FormatException("Invalid input string for parsing to a 'bool'") if throwException;
+			return false, false;
+		}
+		// Compare the actual characters
+		++ix;
+		for (int i = 1; i < compare.Length; ++i) {
+			ch = str(ix);
+			ch2 = compare(i);
+			if (ch != ch2 && ch != (ch2 - 'a' + 'A')) {
+				throw Core.FormatException("Invalid input string for parsing to a 'bool'") if throwException;
+				return false, false;
+			}
+			++ix;
+		}
+		// Pass trailing whitespace
+		for (; ix < str.Length && IsWhitespace(str(ix)); ++ix);
+		if (ix < str.Length) {
+			// Did not consume the whole string
+			throw Core.FormatException("Invalid input string for parsing to a 'bool'") if throwException;
+			return false, false;
+		}
+		return true, result;
+	}
+
+	/// <summary>Parses a 'char' value from a string</summary>
+	public static fcn ParseChar(string str, bool throwException = true) -> (bool, char)
+	{
+		if (str == null) {
+			throw Core.FormatException("Input string cannot be null") if throwException;
+			return false, '\0';
+		}
+		if (str.Length != 1) {
+			throw Core.FormatException("Invalid input string for parsing to a 'char'") if throwException;
+			return false, '\0';
+		}
+		return true, str(0);
+	}
+
+	/// <summary>Parses an integer of type 'T'</summary>
+	public static fcn ParseInteger[T = int](string str, bool signed, bool throwException = true) -> (bool, T)
+	{
+		if (str == null) {
+			throw Core.FormatException("Input string cannot be null") if throwException;
+			return false, 0;
+		}
+		T ret = 0;
+		int ix = 0;
+		// Skip leading whitespace
+		for (; ix < str.Length && IsWhitespace(str(ix)); ++ix);
+		if (ix >= str.Length) {
+			throw Core.FormatException("Input string cannot be empty") if throwException;
+			return false, 0;
+		}
+		readonly string errorMessage = signed ? "Invalid input string for parsing to a signed integer" : "Invalid input string for parsing to an unsigned integer";
+		// Check for a sign ('+' or '-')
+		bool negative = false;
+		if (signed && str(ix) == '-') {
+			negative = true;
+			++ix;
+		} else if (str(ix) == '+') {
+			++ix;
+		}
+		// Scan the digits
+		for (; ix < str.Length; ++ix) {
+			ch = str(ix);
+			if (IsWhitespace(ch)) {
+				break;
+			}
+			int x;
+			if ((x = GetNumber(ch)) == -1) {
+				throw Core.FormatException(errorMessage) if throwException;
+				return false, 0;
+			}
+			prev = ret;
+			ret = 10 * ret + (((negative ? -1 : 1) * x) as T);
+			// Check for underflow/overflow
+			if (negative) {
+				if (ret > prev) {
+					throw Core.FormatException(errorMessage) if throwException;
+					return false, 0;
+				}
+			} else {
+				if (ret < prev) {
+					throw Core.FormatException(errorMessage) if throwException;
+					return false, 0;
+				}
+			}
+		}
+		// Allow whitespace at the end
+		for (; ix < str.Length && IsWhitespace(str(ix)); ++ix);
+		if (ix < str.Length) {
+			// We did not advance past the end with whitespace
+			throw Core.FormatException(errorMessage) if throwException;
+			return false, 0;
+		}
+		return true, ret;
+	}
+
+	/// <summary>Parses a floating-point value of the given type 'T'</summary>
+	public static fcn ParseFloat[T = double](string str, bool throwException = true) -> (bool, T)
+	{
+		if (str == null) {
+			throw Core.FormatException("Input string cannot be null") if throwException;
+			return false, 0;
+		}
+		T ret = 0;
+		int ix = 0;
+		// Skip leading whitespace
+		for (; ix < str.Length && IsWhitespace(str(ix)); ++ix);
+		if (ix >= str.Length) {
+			throw Core.FormatException("Input string cannot be empty") if throwException;
+			return false, 0;
+		}
+		const string errorMessage = "Invalid input string for parsing to a floating-point number";
+		
+		ch = str(ix);
+		if (ch == 'N') {
+			// Check for 'NaN'
+			if (str.Length - ix < 3 || str(++ix) != 'a' || str(++ix) != 'N') {
+				// Not enough characters or bad characters
+				throw Core.FormatException(errorMessage) if throwException;
+				return false, 0;
+			}
+			ret = T.NaN;
+			++ix;
+		} else {
+			// Check for a sign ('+' or '-') and whether we can parse 'Infinity' after this
+			bool negative = false, canInfinity = true;
+			if (ch == '-') {
+				negative = true;
+				++ix;
+			} else if (ch == '+') {
+				canInfinity = false;
+				++ix;
+			}
+			
+			// Collect the mantissa
+			bool number = false, exponent = false, decimal = false, infinity = false;
+			T mult = 0.1 as T;
+			for (; ix < str.Length; ++ix) {
+				ch = str(ix);
+				if (IsWhitespace(ch)) {
+					++ix;
+					break;
+				}
+				if (ch == '.') {
+					if (decimal) {
+						// We were already parsing a decimal
+						throw Core.FormatException(errorMessage) if throwException;
+						return false, 0;
+					}
+					decimal = true;
+					continue;
+				}
+				if (ch == 'e' || ch == 'E') {
+					if (!number) {
+						// Got an exponent without any numbers before it
+						throw Core.FormatException(errorMessage) if throwException;
+						return false, 0;
+					}
+					exponent = true;
+					++ix;
+					break;
+				}
+				if (canInfinity && ch == 'I') {
+					// Check for parsing 'Infinity'
+					number = infinity = true;
+					++ix;
+					break;
+				}
+
+				// Check for a number
+				int x;
+				if ((x = GetNumber(ch)) == -1) {
+					throw Core.FormatException(errorMessage) if throwException;
+					return false, 0;
+				}
+				
+				if (decimal) {
+					// Add 'x' as a fractional component and attenuate 'mult'
+					ret += mult * (((negative ? -1 : 1) * x) as T);
+					mult *= 0.1 as T;
+				} else {
+					prev = ret;
+					ret = 10 * ret + (((negative ? -1 : 1) * x) as T);
+					// Check for overflow
+					if (negative) {
+						if (ret == T.NegInf) {
+							throw Core.OverflowException(errorMessage) if throwException;
+							return false, 0;
+						}
+					} else {
+						if (ret == T.PosInf) {
+							throw Core.OverflowException(errorMessage) if throwException;
+							return false, 0;
+						}
+					}
+				}
+				// Say that we got a number
+				number = true;
+			}
+			if (!number) {
+				// We did not parse anything
+				throw Core.FormatException(errorMessage) if throwException;
+				return false, 0;
+			}
+			if (infinity) {
+				const string Inf = "nfinity";
+				if (str.Length - ix < Inf.Length) {
+					throw Core.FormatException(errorMessage) if throwException;
+					return false, 0;
+				}
+				for (int i = 0; i < Inf.Length; ++i) {
+					if (str(ix) != Inf(i)) {
+						throw Core.FormatException(errorMessage) if throwException;
+						return false, 0;
+					}
+					++ix;
+				}
+				if (negative) {
+					ret = T.NegInf;
+				} else {
+					ret = T.PosInf;
+				}
+				whitespace = true;
+			} else if (exponent) {
+				bool expNegative = false;
+				if (ix >= str.Length) {
+					throw Core.FormatException(errorMessage) if throwException;
+					return false, 0;
+				}
+				ch = str(ix);
+				if (ch == '-') {
+					expNegative = true;
+					++ix;
+				} else if (ch == '+') {
+					++ix;
+				}
+				// Consume numbers
+				T exp = 0;
+				number = false;
+				for (; ix < str.Length; ++ix) {
+					ch = str(ix);
+					if (IsWhitespace(ch)) {
+						break;
+					}
+					int x;
+					if ((x = GetNumber(ch)) == -1) {
+						throw Core.FormatException(errorMessage) if throwException;
+						return false, 0;
+					}
+					exp = 10 * exp + (((expNegative ? -1 : 1) * x) as T);
+					number = true;
+					// Check for overflow
+					if (expNegative) {
+						if (exp == T.NegInf) {
+							throw Core.OverflowException(errorMessage) if throwException;
+							return false, 0;
+						}
+					} else {
+						if (exp == T.PosInf) {
+							throw Core.OverflowException(errorMessage) if throwException;
+							return false, 0;
+						}
+					}
+				}
+				if (!number) {
+					throw Core.FormatException(errorMessage) if throwException;
+					return false, 0;
+				}
+				ret = ret * (10 ^ exp);
+				if (negative) {
+					if (ret == T.NegInf) {
+						throw Core.OverflowException(errorMessage) if throwException;
+						return false, 0;
+					}
+				} else {
+					if (ret == T.PosInf) {
+						throw Core.OverflowException(errorMessage) if throwException;
+						return false, 0;
+					}
+				}
+			}
+			// Else leave 'ret' as is
+		}
+		// Allow whitespace at the end
+		for (; ix < str.Length && IsWhitespace(str(ix)); ++ix);
+		if (ix < str.Length) {
+			// We did not advance past the end with whitespace
+			throw Core.FormatException(errorMessage) if throwException;
+			return false, 0;
+		}
+		return true, ret;
+	}
+}
+
+

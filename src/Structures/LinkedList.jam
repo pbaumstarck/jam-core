@@ -1,0 +1,379 @@
+
+namespace Rbrx.Structures
+{
+	/// <summary>A doubly linked list</summary>
+	public class LinkedList[T] : Jam.IEnumerable[T]
+	{
+		/// <summary>Our node class</summary>
+		public class Node
+		{
+			/// <summary>The list that owns this node. When we are evicted from the list, this is turned to null.</summary>
+			inline public LinkedList[T] Owner { get; internal set; }
+			/// <summary>The value that this node contains</summary>
+			inline public T Value { get; internal set; }
+			/// <summary>Pointer to the previous node</summary>
+			inline public Node Prev { get; internal set; }
+			/// <summary>Pointer to the next node</summary>
+			inline public Node Next { get; internal set; }
+			
+			
+			/// <summary>Implicit concstructor on the owning list and value</summary>
+			fcn new(LinkedList[T] owner, T value)
+			{
+				Owner = owner;
+				Value = value;
+			}
+		}
+		
+		/// <summary>The first node of the list</summary>
+		inline public Node First { get; private set; }
+		/// <summary>The last node of the list</summary>
+		inline public Node Last { get; private set; }
+		/// <summary>The number of nodes in the list</summary>
+		inline public int Count { get; private set; }
+		
+		/// <summary>The node of our iteration for 'IEnumerable[T]'</summary>
+		private Node iter;
+		
+		
+		// Constructor
+		/// <summary>Creates a list from the supplied arguments</summary>
+		fcn new(T values*)
+		{
+			for value in values {
+				AddLast(value);
+			}
+		}
+		
+		
+		/// <summary>Adds items to the front of the list</summary>
+		public fcn AddFirst(T values+) -> Node
+		{
+			for value in values {
+				if (First == null) {
+					// Just allocate a new guy
+					Last = First = Node(this, value);
+				} else {
+					// Insert it before the 'First' node
+					InsertBefore(First, value);
+				}
+				++Count;
+			}
+			return First;
+		}
+		/// <summary>Adds an item to the end of the list</summary>
+		public fcn AddLast(T values+) -> Node
+		{
+			for value in values {
+				if (Last == null) {
+					// Just allocate a new guy
+					Last = First = Node(this, value);
+				} else {
+					// Insert it after the 'Last' node
+					InsertAfter(Last, value);
+				}
+				++Count;
+			}
+			return Last;
+		}
+		
+		/// <summary>Removes the first element from the list and returns its value</summary>
+		public fcn RemoveFirst() -> T
+		{
+			throw Core.Exception("No item to remove") if First == null;
+			var ret = First.Value;
+			Remove(First);
+			return ret;
+		}
+		/// <summary>Removes the last element from the list and returns its value</summary>
+		public fcn RemoveLast() -> T
+		{
+			throw Core.Exception("No item to remove") if Last == null;
+			var ret = Last.Value;
+			Remove(Last);
+			return ret;
+		}
+		/// <summary>Clears the list</summary>
+		public fcn Clear()
+		{
+			First = null;
+			Last = null;
+			Count = 0;
+		}
+		
+		/// <summary>Finds the first node with any of the given values</summary>
+		public fcn Find(T values+) -> Node
+		{
+			var node = First;
+			while (node != null) {
+				for value in values {
+					if (node.Value == value) {
+						return node;
+					}
+				}
+				node = node.Next;
+			}
+			return null;
+		}
+		/// <summary>Finds the last node with any of the given values</summary>
+		public fcn FindLast(T values+) -> Node
+		{
+			var node = Last;
+			while (node != null) {
+				for value in values {
+					if (node.Value == value) {
+						return node;
+					}
+				}
+				node = node.Prev;
+			}
+			return null;
+		}
+		
+		/// <summary>Indexer to get and set arbitrary nodes in the list, which accepts negative wraparound indices</summary>
+		public T this(int i)
+		{
+			get
+			{
+				throw Core.IndexOutOfRangeException() if i >= Count || i < -Count;
+				return GetNode(i).Value;
+			}
+			set
+			{
+				throw Core.IndexOutOfRangeException() if i >= Count || i < -Count;
+				GetNode(i).Value = value;
+			}
+		}
+		
+		
+		/// <summary>Get the 'i'th node from the 'First' (for a non-negative, 0-based index) or 'Last' (for a negative index, -1 returning the 'Last' node)</summary>
+		private fcn GetNode(int i) -> Node
+		{
+			Node node;
+			if (i >= 0) {
+				node = First;
+				for (; i > 0; --i) {
+					node = node.Next;
+				}
+				return node;
+			} else {
+				i = -i;
+				node = Last;
+				for (; i > 0; --i) {
+					node = node.Prev;
+				}
+			}
+			return node;
+		}
+		
+		/// <summary>Insert a node after the given one</summary>
+		public fcn InsertAfter(Node node, T values+) -> Node
+		{
+			ValidateNode(node);
+			Node newNode = null;
+			for value in values {
+				newNode = Node(this, value);
+				InsertAround(node, newNode, false);
+				if (Last == node) {
+					Last = newNode;
+				}
+				// Keep updating 'node' so that we insert following elements after it
+				node = newNode;
+				++Count;
+			}
+			return newNode;
+		}
+		/// <summary>Insert a node before the given one</summary>
+		public fcn InsertBefore(Node node, T values+) -> Node
+		{
+			ValidateNode(node);
+			Node newNode = null;
+			for value in values {
+				newNode = Node(this, value);
+				InsertAround(node, newNode, true);
+				if (First == node) {
+					// Make 'newNode' the new First
+					First = newNode;
+				}
+				// Keep updating 'node' so that we insert following elements before it
+				node = newNode;
+				++Count;
+			}
+			return newNode;
+		}
+		/// <summary>Insert a new node before or after the pivot</summary>
+		private fcn InsertAround(Node pivot, Node @new, bool before)
+		{
+			// Figure out what the previous and next nodes will be
+			var prev = before ? pivot.Prev : pivot;
+			var next = before ? pivot : pivot.Next;
+			if (prev != null) {
+				prev.Next = @new;
+				@new.Prev = prev;
+			}
+			if (next != null) {
+				next.Prev = @new;
+				@new.Next = next;
+			}
+		}
+		
+		/// <summary>Validate a node as an argument</summary>
+		private fcn ValidateNode(Node node)
+		{
+			throw Core.Exception("'node' argument cannot be null") if node == null;
+			throw Core.Exception("'node' did not belong to this list") if node.Owner == null || node.Owner != this;
+		}
+		
+		/// <summary>Remove a given node from the list</summary>
+		public fcn Remove(Node nodes+)
+		{
+			for node in nodes {
+				ValidateNode(node);
+				if (Count == 1) {
+					// This was the only node in the list, so quick-kill
+					First = null;
+					Last = First;
+					Count = 0;
+				} else {
+					var prev = node.Prev;
+					var next = node.Next;
+					// Re-wire around the node
+					if (prev != null) {
+						prev.Next = next;
+					}
+					if (next != null) {
+						next.Prev = prev;
+					}
+					if (First == node) {
+						// Make 'First' the next node
+						First = next;
+					}
+					if (Last == node) {
+						// Make 'Last' the previous node
+						Last = prev;
+					}
+					// Kill the node's membership in this list
+					node.Owner = null;
+					--Count;
+				}
+			}
+		}
+		
+		
+		/// <summary>Get the current iteration value</summary>
+		public T Value { get { return iter.Value; } }
+		/// <summary>Reset the iteration to the first node</summary>
+		public fcn Reset()
+		{
+			iter = null;
+		}
+		/// <summary>Moves to the next item in the iteration</summary>
+		public fcn MoveNext() -> bool
+		{
+			if (iter == null) {
+				// Start at the First
+				if (First == null) {
+					return false;
+				} else {
+					iter = First;
+					return true;
+				}
+			} else {
+				// The iteration lets the list be modified as it progresses, and we skip nodes that have been evicted from the list. We can do this because, even once they have been
+				// evicted, their 'Next' and 'Prev' links are still left intact. So we simply follow these until we run off the end.
+				var prevIter = iter;
+				iter = iter.Next;
+				// While the node does not belong to 'this', keep going
+				while (iter != null && iter.Owner != this) {
+					iter = iter.Next;
+				}
+				// The iteration is only going as long as 'iter' is non-null
+				return iter != null;
+			}
+		}
+	}
+	
+	/// <summary>A static class for running tests</summary>
+	public static class LinkedLists
+	{
+		public static fcn Test()
+		{
+			var list = LinkedList[int]();
+			list.AddLast(1);
+			list.AddLast(2);
+			list.AddLast(3);
+			list.AddLast(54);
+			list.AddLast(8);
+			list.AddLast(-11);
+			list.AddLast(-67);
+			list.AddLast(32);
+
+			> "Loop 1";
+			for i in list {
+				> ", ", i;
+			}
+			>>;
+
+			>> "Evicting ...";
+			var first = list.RemoveFirst();
+			>> first;
+			var second = list.RemoveLast();
+			>> second;
+
+			> "Loop 2";
+			for i in list {
+				> ", ", i;
+			}
+			>>;
+			
+			// Change some elements
+			list(1) += 72;
+			list(2) = -99;
+			> "Loop 3";
+			for i in list {
+				> ", ", i;
+			}
+			>>;
+			
+			list.InsertAfter(list.First, 1_000_000);
+			list.InsertAfter(list.First, 1_000_001, 1_000_002, 1_000_003);
+			
+			> "Loop 4";
+			for i in list {
+				> ", ", i;
+			}
+			>>;
+			
+			list = LinkedList[int](6, 7, -19, 41);
+			> "Loop 5";
+			for i in list {
+				> ", ", i;
+			}
+			>>;
+			var last = list.AddLast(100, 101, 102);
+			list.InsertBefore(last, -50, -51, -52);
+			> "Loop 6";
+			for i in list {
+				> ", ", i;
+			}
+			>>;
+			
+			LinkedList[int].Node find;
+			while ((find = list.Find(88, -50, 101)) != null) {
+				list.Remove(find);
+			}
+			if ((find = list.FindLast(6, 102)) != null) {
+				list.Remove(find);
+			}
+			> "Loop 7";
+			for i in list {
+				> ", ", i;
+			}
+			>>;
+		}
+	}
+}
+
+Rbrx.Structures.LinkedLists.Test();
+
+

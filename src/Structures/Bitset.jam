@@ -1,0 +1,363 @@
+
+using Jam;
+using Rbrx.Binary;
+
+namespace Rbrx.Structures
+{
+	/// <summary>A bitset that uses 'uint64's to store its values and is dynamically resizeable on out-of-bounds 'set's</summary>
+	public class Bitset : bool[]
+	{
+		/// <summary>The number of dimensions of the container</summary>
+		public const int Ndims = 1;
+		/// <summary>The number of 'uint64's that, once we allocate up to this, no longer double the array size on reallocation but simply add this number of elements</summary>
+		private const int allocationBlock = 1024;
+		
+		/// <summary>The values of the bitset</summary>
+		private primitive uint64[] values;
+		/// <summary>The number of values stored in the bitset</summary>
+		public inline int Numel { get; private set; }
+		/// <summary>The number of values stored in the bitset</summary>
+		public int Count { get { return Numel; } }
+		/// <summary>The number of 'uint64' values that have been allocated</summary>
+		private int nAllocSlots;
+		/// <summary>The maximum number of bits we currently have allocated</summary>
+		private int allocNumel;
+		
+		
+		// Constructor
+		/// <summary>Allocates a bitset to store up to 'numel' values</summary>
+		public fcn new(int numel)
+		{
+			if (numel < 0) {
+				throw InvalidArgumentException();
+			}
+			Numel = numel;
+			nAllocSlots = (numel + 63) >> 6;
+			values = Malloc[uint64](nAllocSlots);
+			allocNumel = nAllocSlots << 6;
+		}
+		
+		
+		/// <summary>The Jam-standard 'Size' function</summary>
+		public fcn Size(int dim) -> int
+		{
+			if (dim < 0) {
+				throw InvalidArgumentException();
+			}
+			return lookup(dim) { 0, 1 => Numel; => 1 };
+		}
+		/// <summary>A 1-D indexer for the bitset</summary>
+		public bool this(int i)
+		{
+			get
+			{
+				if (i < 0 || i >= Numel) {
+					throw Core.IndexOutOfRangeException();
+				}
+				return (values(i >> 6) & (0x1u__64 << (i & 0x3f))) != 0;
+			}
+			set
+			{
+				if (i < 0) {
+					throw Core.IndexOutOfRangeException();
+				}
+				if (i >= Numel) {
+					EnsureSize(i + 1);
+				}
+				if (value) {
+					values(i >> 6) |= (0x1u__64 << (i & 0x3f));
+				} else {
+					values(i >> 6) &= ~(0x1u__64 << (i & 0x3f));
+				}
+			}
+		}
+		/// <summary>The general 'KArray' indexer</summary>
+		public object this(int[] ixes)
+		{
+			get
+			{
+				if (ixes.Size(1) != 1) {
+					throw Core.IndexOutOfRangeException();
+				}
+				return this(ixes(0));
+			}
+			set
+			{
+				if (ixes.Size(1) != 1) {
+					throw Core.IndexOutOfRangeException();
+				}
+				this(ixes(0)) = value;
+			}
+		}
+		
+		/// <summary>Expand the bitset so that it can accommodate 'numel' elements, including possibly reallocating its values</summary>
+		private fcn EnsureSize(int numel)
+		{
+			if (numel <= allocNumel) {
+				// That was easy
+				Numel = numel;
+				return;
+			}
+			// The new number of 'uint64's we will need to accommodate 'numel'
+			var newNallocSlots = nAllocSlots;
+			var nNeceSlots = (numel + 63) >> 6;
+			// While we're under 'allocationBlock', double to meet our goal
+			while (newNallocSlots < allocationBlock && newNallocSlots < nNeceSlots) {
+				newNallocSlots <<= 1;
+			}
+			// Add 'allocationBlock' to meet our goal
+			while (newNallocSlots < nNeceSlots) {
+				newNallocSlots += allocationBlock;
+			}
+			// Re-allocate and set our fields
+			var newValues = Malloc[uint64](newNallocSlots);
+			Memcpy[uint64](newValues, values, nAllocSlots);
+			var oldValues = this.values;
+			this.values = newValues;
+			Free(oldValues);
+			this.nAllocSlots = newNallocSlots;
+			this.Numel = numel;
+			this.allocNumel = newNallocSlots << 6;
+		}
+		
+		
+		/// <summary>Generates a string version of the bitset, enumerating the 0/1 values from top to bottom</summary>
+		public override fcn ToString() -> string
+		{
+			var chars = Malloc[char](Numel);
+			for (int i = Numel - 1; i >= 0; --i) {
+				chars(#i) = this(i) ? '1' : '0';
+			}
+			var ret = Jam.String(chars);
+			Free(chars);
+			return ret;
+		}
+		
+		
+		/// <summary>Returns the index of the first bit that is set or un-set, depending on the argument. -1 is returned if no bit matches the search.</summary>
+		public fcn FirstBit(bool @set = true) -> int
+		{
+			var offset = 0;
+			for i in 0 : nAllocSlots - 1 {
+				var ix = FirstBitSet(@set ? values(i) : ~values(i));
+				if (ix != -1) {
+					// We found something, so add the offset and make sure it's within 'Numel'
+					ix += offset;
+					return ix < Numel ? ix : -1;
+				} else {
+					// Didn't find anything, so add to the offset and check the next value
+					offset += 64;
+				}
+			}
+			return -1;
+		}
+	}
+	
+	/// <summary>A bitset that stores exactly 32 values in a single 'uint'</summary>
+	public struct Bitset32 : bool[]
+	{
+		/// <summary>The number of dimensions of the container</summary>
+		public const int Ndims = 1;
+		/// <summary>The values of the bitset</summary>
+		private uint values;
+		/// <summary>Direct readonly access to the 'Values' members</summary>
+		public uint Values { get { return values; } }
+		/// <summary>The number of elements of the bitset, which is less than or equal to 32</summary>
+		public readonly int Numel;
+		/// <summary>The number of values stored in the bitset</summary>
+		public int Count { get { return Numel; } }
+		
+		
+		// Constructors
+		/// <summary>Hide the argument-less construcotr</summary>
+		private fcn new() { }
+		/// <summary>A constructor that can set all the bits to true or false</summary>
+		public fcn new(bool value = false, int numel = 32)
+		{
+			if (value) {
+				values = 0xffffffffu;
+			}
+			this.Numel = numel;
+		}
+		/// <summary>A copy constructor working from another 'Bitset32'</summary>
+		public fcn new(Bitset32 obj) {
+			this.values = obj.values;
+			this.Numel = obj.Numel;
+		}
+		
+		
+		/// <summary>The Jam-standard 'Size' function</summary>
+		public fcn Size(int dim) -> int
+		{
+			if (dim < 0) {
+				throw InvalidArgumentException();
+			}
+			return lookup(dim) { 0, 1 => Numel; => 1 };
+		}
+		/// <summary>A 1-D indexer for the bitset</summary>
+		public bool this(int i)
+		{
+			get
+			{
+				if (i < 0 || i >= Numel) {
+					throw Core.IndexOutOfRangeException();
+				}
+				return (values & (0x1u << i)) != 0;
+			}
+			set
+			{
+				if (i < 0 || i >= Numel) {
+					throw Core.IndexOutOfRangeException();
+				}
+				if (value) {
+					values |= (0x1u << i);
+				} else {
+					values &= ~(0x1u << i);
+				}
+			}
+		}
+		/// <summary>The general 'KArray' indexer</summary>
+		public object this(int[] ixes)
+		{
+			get
+			{
+				if (ixes.Size(1) != 1) {
+					throw Core.IndexOutOfRangeException();
+				}
+				return this(ixes(0));
+			}
+			set
+			{
+				if (ixes.Size(1) != 1) {
+					throw Core.IndexOutOfRangeException();
+				}
+				this(ixes(0)) = value;
+			}
+		}
+				
+		/// <summary>Generates a string version of the bitset, enumerating the 0/1 values from top to bottom</summary>
+		public override fcn ToString() -> string
+		{
+			var chars = Malloc[char](Numel);
+			for (int i = Numel - 1; i >= 0; --i) {
+				chars(#i) = this(i) ? '1' : '0';
+			}
+			var ret = Jam.String(chars);
+			Free(chars);
+			return ret;
+		}
+		
+		/// <summary>Returns the index of the first bit that is set or un-set, depending on the argument. -1 is returned if no bit matches the search.</summary>
+		public fcn FirstBit(bool @set = true) -> int
+		{
+			var ix = FirstBitSet(@set ? values : ~values);
+			// Even if we found something, make sure it's within 'Numel'
+			return ix != -1 && ix < Numel ? ix : -1;
+		}
+	}
+	
+	/// <summary>A bitset that stores exactly 64 values in a single 'uint64'</summary>
+	public struct Bitset64 : bool[]
+	{
+		/// <summary>The number of dimensions of the container</summary>
+		public const int Ndims = 1;
+		/// <summary>The values of the bitset</summary>
+		private uint64 values;
+		/// <summary>Direct readonly access to the 'Values' members</summary>
+		public uint64 Values { get { return values; } }
+		/// <summary>The number of elements of the bitset, which is less than or equal to 32</summary>
+		public readonly int Numel;
+		/// <summary>The number of values stored in the bitset</summary>
+		public int Count { get { return Numel; } }
+		
+		
+		// Constructors
+		/// <summary>Hide the argument-less construcotr</summary>
+		private fcn new() { }
+		/// <summary>A constructor that can set all the bits to true or false</summary>
+		public fcn new(bool value = false, int numel = 64)
+		{
+			if (value) {
+				values = 0xffffffffffffffffu__64;
+			}
+			this.Numel = numel;
+		}
+		/// <summary>A copy constructor working from another 'Bitset32'</summary>
+		public fcn new(Bitset64 obj) {
+			this.values = obj.values;
+			this.Numel = obj.Numel;
+		}
+		
+		
+		/// <summary>The Jam-standard 'Size' function</summary>
+		public fcn Size(int dim) -> int
+		{
+			if (dim < 0) {
+				throw InvalidArgumentException();
+			}
+			return lookup(dim) { 0, 1 => Numel; => 1 };
+		}
+		/// <summary>A 1-D indexer for the bitset</summary>
+		public bool this(int i)
+		{
+			get
+			{
+				if (i < 0 || i >= Numel) {
+					throw Core.IndexOutOfRangeException();
+				}
+				return (values & (0x1u__64 << i)) != 0;
+			}
+			set
+			{
+				if (i < 0 || i >= Numel) {
+					throw Core.IndexOutOfRangeException();
+				}
+				if (value) {
+					values |= (0x1u__64 << i);
+				} else {
+					values &= ~(0x1u__64 << i);
+				}
+			}
+		}
+		/// <summary>The general 'KArray' indexer</summary>
+		public object this(int[] ixes)
+		{
+			get
+			{
+				if (ixes.Size(1) != 1) {
+					throw Core.IndexOutOfRangeException();
+				}
+				return this(ixes(0));
+			}
+			set
+			{
+				if (ixes.Size(1) != 1) {
+					throw Core.IndexOutOfRangeException();
+				}
+				this(ixes(0)) = value;
+			}
+		}
+				
+		/// <summary>Generates a string version of the bitset, enumerating the 0/1 values from top to bottom</summary>
+		public override fcn ToString() -> string
+		{
+			var chars = Malloc[char](Numel);
+			for (int i = Numel - 1; i >= 0; --i) {
+				chars(#i) = this(i) ? '1' : '0';
+			}
+			var ret = Jam.String(chars);
+			Free(chars);
+			return ret;
+		}
+		
+		/// <summary>Returns the index of the first bit that is set or un-set, depending on the argument. -1 is returned if no bit matches the search.</summary>
+		public fcn FirstBit(bool @set = true) -> int
+		{
+			var ix = FirstBitSet(@set ? values : ~values);
+			// Even if we found something, make sure it's within 'Numel'
+			return ix != -1 && ix < Numel ? ix : -1;
+		}
+	}
+}
+
+

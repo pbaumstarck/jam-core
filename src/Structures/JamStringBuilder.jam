@@ -1,0 +1,123 @@
+
+namespace Rbrx.Structures
+{
+	/// <summary>A data structure for building a string efficiently and incrementally</summary>
+	public class JamStringBuilder
+	{
+		/// <summary>The size that we double 'chars' until we reach, whereafter we just add 'doublingSize'</summary>
+		private const int doublingSize = 1024;
+		/// <summary>The stored characters</summary>
+		private primitive char[] chars;
+		/// <summary>The number of set characters in the 'chars' array</summary>
+		public int Count { get; private set; }
+		/// <summary>The allocated capacity of the 'chars' array</summary>
+		private int capacity { get { return chars.Count; } }
+	
+	
+		// Constructor
+		fcn new()
+		{
+			chars = Jam.Malloc[char](32);
+		}
+		/// <summary>Constructor to allocate a specified capacity of characters</summary>
+		fcn new(int capacity) {
+			if (capacity <= 0) {
+				throw Core.Exception("Capacity must be greater than 0");
+			}
+			chars = Jam.Malloc[char](capacity);
+		}
+		/// <summary>Constructor to allocate from a starting string</summary>
+		fcn new(string starter)
+		{
+			var capacity = starter == null || starter.Length < 4 ? 4 : starter.Length;
+			chars = Jam.Malloc[char](capacity);
+			if (starter != null && starter.Length > 0) {
+				// Copy over the characters
+				for i in 0 : starter.Length - 1 {
+					chars(i) = starter(i);
+				}
+			}
+		}
+		
+		
+		/// <summary>Append a string to the current contents, and return 'this' for chaining</summary>
+		public fcn Append(char c) -> JamStringBuilder 
+		{
+			EnsureSize(Count + 1);
+			chars(Count++) = c;
+			return this;
+		}
+		/// <summary>Append a string to the current contents, and return 'this' for chaining</summary>
+		public fcn Append(string str) -> JamStringBuilder
+		{
+			if (str == null || str.Length == 0) {
+				return this;
+			}
+			// Okay, some actual work to do
+			EnsureSize(Count + str.Length);
+			for i in 0 : str.Length - 1 {
+				chars(Count + i) = str(i);
+			}
+			Count += str.Length;
+			return this;
+		}
+		/// <summary>Append a string and a newline, and return 'this' for chaining</summary>
+		public fcn AppendLine(string str) -> JamStringBuilder
+		{
+			if (str == null || str.Length == 0) {
+				return this;
+			}
+			// Okay, some actual work to do
+			EnsureSize(Count + str.Length + 1);
+			for i in 0 : str.Length - 1 {
+				chars(Count + i) = str(i);
+			}
+			Count += str.Length;
+			// Now handle the newline
+			chars(Count) = '\n';
+			++Count;
+			return this;
+		}
+		
+		/// <summary>Get the current representation of the string</summary>
+		public override fcn ToString() -> string
+		{
+			return Jam.String(chars, 0, Count);
+		}
+		
+		
+		/// <summary>Ensure that 'chars' is allocated up to 'size' capacity</summary>
+		public fcn EnsureSize(int size)
+		{
+			if (capacity >= size) {
+				return;
+			}
+			// Must re-allocate
+			int newCapacity = capacity;
+			// Double until we get up past 'doublingSize'
+			while (newCapacity < size && newCapacity < doublingSize) {
+				newCapacity <<= 1;
+			}
+			if (newCapacity < size) {
+				// Add 'doublingSize' until we're above
+				while (newCapacity < size) {
+					newCapacity += doublingSize;
+				}
+			}
+			// Re-allocate
+			var newChars = Jam.Malloc[char](newCapacity);
+			if (Count > 0) {
+				Jam.Memcpy(newChars, chars, Count);
+			}
+			chars = newChars;
+		}
+		
+		/// <summary>Clear the contents of the string builder but retain the allocated capacity</summary>
+		public fcn Clear()
+		{
+			Count = 0;
+		}
+	}
+}
+
+

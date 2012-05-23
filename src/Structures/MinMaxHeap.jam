@@ -1,0 +1,267 @@
+
+namespace Rbrx.Structures
+{
+	/// <summary>A 'min-max' heap that can perform 'DeleteMin' and 'DeleteMax' in constant time. Implementation is described in:
+	/// "Min-Max Heaps and Generalized Priority Queues" (http://www.cs.otago.ac.nz/staffpriv/mike/Papers/MinMaxHeaps/MinMaxHeaps.pdf).</summary>
+	public class MinMaxHeap[T, Comparator : KLess[T] = Less[T]] : AmortizedArray[T]
+	{
+		/// <summary>Our comparison operator on the elements</summary>
+		private Comparator comparator = Comparator();
+		/// <summary>The number of values in the heap</summary>
+		public inline int Count { get { return numel; } }
+		
+		
+		// Constructors
+		public fcn new()
+			: base(8) { }
+		public fcn new(int capacity)
+			: base(capacity) { }
+		
+		
+		/// <summary>Whether the item in position 'i' is on a min level</summary>
+		private fcn IsMinLevel(int i) -> bool
+		{
+			if (i == 0) {
+				return true;
+			} else {
+				// Move up until we get to the root, counting generations as we go
+				int counter = 0;
+				var ix = i;
+				do {
+					++counter;
+					ix = (ix - 1) >> 1;
+				} while (ix > 0);
+				return counter % 2 == 0;
+			}
+		}
+		
+		/// <summary>Clears the heap</summary>
+		public fcn Clear()
+		{
+			numel = 0;
+		}
+		/// <summary>An enumerator which empties the heap by pulling successive maxima out of it</summary>
+		public enumerator fcn Maxes() -> T
+		{
+			for i in 0 : numel - 1 {
+				return DeleteMax();
+			}
+		}
+		/// <summary>An enumerator which empties the heap by pulling successive minima out of it</summary>
+		public enumerator fcn Mins() -> T
+		{
+			for i in 0 : numel - 1 {
+				return DeleteMin();
+			}
+		}
+		
+		
+		/// <summary>Inserts the items into the heap</summary>
+		public fcn Add(T items+)
+		{
+			var ix = Count;
+			EnsureSize(Count + #items);
+			for item in items {
+				values(ix) = item;
+				BubbleUp(ix);
+				++ix;
+			}
+		}
+		// <summary>Bubble the item at 'ix' up through the heap to preserve the 'min-max' structure</summary>
+		private fcn BubbleUp(int ix)
+		{
+			int parentIx;
+			if (IsMinLevel(ix)) {
+				if ((parentIx = (ix - 1) >> 1) >= 0 && !comparator.Compare(values(ix), values(parentIx))) {
+					// Swap 'ix' and 'parentIx'
+					temp = values(ix);
+					values(ix) = values(parentIx);
+					values(parentIx) = temp;
+					BubbleUp(parentIx, true);
+				} else {
+					BubbleUp(ix, false);
+				}
+			} else {
+				if ((parentIx = (ix - 1) >> 1) >= 0 && comparator.Compare(values(ix), values(parentIx))) {
+					// Swap 'ix' and 'parentIx'
+					temp = values(ix);
+					values(ix) = values(parentIx);
+					values(parentIx) = temp;
+					BubbleUp(parentIx, false);
+				} else {
+					BubbleUp(ix, true);
+				}
+			}
+		}
+		/// <summary>Bubble up something that is known to be on a 'min' level</summary>
+		/// <summary>Whether we are bubbling up from a 'max' level instead of a 'min' level</summary>
+		private fcn BubbleUp(int ix, bool max)
+		{
+			int parentIx, grandparentIx;
+			if ((parentIx = (ix - 1) >> 1) >= 0 && (grandparentIx = (parentIx - 1) >> 1) >= 0 && (max ~ comparator.Compare(values(ix), values(grandparentIx)))) {
+				// Swap 'ix' and 'grandparentIx'
+				temp = values(ix);
+				values(ix) = values(grandparentIx);
+				values(grandparentIx) = temp;
+				BubbleUp(grandparentIx, max);
+			}
+		}
+				
+		/// <summary>Peeks at the minimum element in the heap without removing it</summary>
+		public fcn PeekMin() -> T
+		{
+			throw Core.Exception("The heap is empty") if numel == 0;
+			return values(0);
+		}
+		/// <summary>Removes and returns the minimum element from the heap</summary>
+		public fcn DeleteMin() -> T
+		{
+			throw Core.Exception("The heap is empty") if numel == 0;
+			var min = values(0);
+			// Replace the root with the last element, then perform trickle down on it
+			values(0) = values(--numel);
+			TrickleDown(0, false);
+			return min;
+		}
+		
+		/// <summary>Peeks at the maximum element in the heap without removing it</summary>
+		public fcn PeekMax() -> T
+		{
+			T max;
+			// Check the children of the root
+			switch (numel) {
+				case 0 =>
+					throw Core.Exception("The heap is empty");
+				case 1 =>
+					// Only the root exists, so we can just return that
+					return values(0);
+				case 2 =>
+					// The root has one 'max' child, so just return that
+					return values(1);
+				default =>
+					// Compare the root's two 'max' children
+					if (comparator.Compare(values(1), values(2))) {
+						// '2' is greater
+						return values(2);
+					} else {
+						return values(1);
+					}
+			}
+		}
+		/// <summary>Removes and returns the maximum element from the heap</summary>
+		public fcn DeleteMax() -> T
+		{
+			T max;
+			// Check the children of the root
+			switch (numel) {
+				case 0 =>
+					throw Core.Exception("The heap is empty");
+				case 1 =>
+					// Only the root exists, so we can just return that
+					max = values(0);
+					--numel;
+					return max;
+				case 2 =>
+					// The root has one 'max' child, so just return that
+					max = values(1);
+					--numel;
+					return max;
+				default =>
+					// Compare the root's two 'max' children
+					int maxIx;
+					if (comparator.Compare(values(1), values(2))) {
+						// '2' is greater
+						max = values(maxIx = 2);
+					} else {
+						max = values(maxIx = 1);
+					}
+					// Replace 'maxIx' with the last element, then perform trickle down on it
+					values(maxIx) = values(--numel);
+					TrickleDown(maxIx, true);
+					return max;
+			}
+		}
+		
+		/// <summary>Trickle down the node at position 'ix'</summary>
+		private fcn TrickleDown(int ix)
+		{
+			if (IsMinLevel(ix)) {
+				TrickleDown(ix, false);
+			} else {
+				TrickleDown(ix, true);
+			}
+		}
+		/// <summary>Trickle down the node at position 'ix' that is known to be on a 'min' level</summary>
+		/// <param name="min">Whether we are trickling down from a 'max' level or a 'min' level</summary>
+		private fcn TrickleDown(int ix, bool max)
+		{
+			var lchild = (ix << 1) + 1;
+			var rchild = (ix << 1) + 2;
+			if (lchild < numel || rchild < numel) {
+				// Find the 'min' or 'max' among all the children and grandchildren of 'ix' (pursuant to the wishes of 'bool max')
+				int extremeIx;
+				T extreme;
+				// - Start by finding the 'extreme' among left and right
+				if (lchild < numel) {
+					if (rchild < numel && (max ~ comparator.Compare(values(rchild), values(lchild)))) {
+						extreme = values(extremeIx = rchild);
+					} else {
+						extreme = values(extremeIx = lchild);
+					}
+				} else {
+					extreme = values(extremeIx = rchild);
+				}
+				// - Next check the grandchildren, and keep track of whether the 'extreme' comes from them
+				bool isGrandchild = false;
+				int grandchild;
+				// Check the left's grandchildren against the minimum
+				if (lchild < numel) {
+					if ((grandchild = (lchild << 1) + 1) < numel && (max ~ comparator.Compare(values(grandchild), extreme))) {
+						extreme = values(extremeIx = grandchild);
+						isGrandchild = true;
+					}
+					if ((grandchild = (lchild << 1) + 2) < numel && (max ~ comparator.Compare(values(grandchild), extreme))) {
+						extreme = values(extremeIx = grandchild);
+						isGrandchild = true;
+					}
+				}
+				// Check the right's grandchildren against the minimum
+				if (rchild < numel) {
+					if ((grandchild = (rchild << 1) + 1) < numel && (max ~ comparator.Compare(values(grandchild), extreme))) {
+						extreme = values(extremeIx = grandchild);
+						isGrandchild = true;
+					}
+					if ((grandchild = (rchild << 1) + 2) < numel && (max ~ comparator.Compare(values(grandchild), extreme))) {
+						extreme = values(extremeIx = grandchild);
+						isGrandchild = true;
+					}
+				}
+				if (isGrandchild) {
+					if (max ~ comparator.Compare(extreme, values(ix))) {
+						// Swap 'ix' and 'extremeIx'
+						var item = values(ix);
+						values(ix) = extreme;
+						values(extremeIx) = item;
+						int parentIx = -1;
+						if (max ~ (!comparator.Compare(values(extremeIx), values(parentIx = (extremeIx - 1) >> 1)))) {
+							// Swap 'extremeIx' and 'parentIx'
+							item = values(parentIx);
+							values(parentIx) = values(extremeIx);
+							values(extremeIx) = item;
+						}
+						TrickleDown(extremeIx, max);
+					}
+				} else {
+					if (max ~ comparator.Compare(extreme, values(ix))) {
+						// Swap 'ix' and extremeIx'
+						var item = values(ix);
+						values(ix) = extreme;
+						values(extremeIx) = item;
+					}
+				}
+			}
+		}
+	}
+}
+
+

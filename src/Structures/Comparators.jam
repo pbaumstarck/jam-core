@@ -1,0 +1,21 @@
+
+namespace Rbrx.Structures
+{
+	/// <summary>A static interface defining a member than can do a strict weak ordering between elements of a type</summary>
+	public static interface KLess[T]
+	{
+		/// <summary>Returns true if 'a' should appear before 'b' in a strict weak ordering operation</summary>
+		fcn Compare(T a, T b) -> bool;
+	}
+	/// <summary>A struct implementation of 'KLess[T]' that just applies the '<' operator to the 'Compare' arguments</summary>
+	public struct Less[T] : KLess[T]
+	{
+		/// <summary>Returns true if 'a' should appear before 'b' in a strict weak ordering operation</summary>
+		static fcn Compare(T a, T b) -> bool
+		{
+			return a < b;
+		}
+	}
+}
+
+

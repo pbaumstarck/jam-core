@@ -1,0 +1,411 @@
+
+namespace Rbrx.Structures
+{
+	/// <summary>A node designed for use in a red--black tree</summary>
+	public class RedBlackNode[Key, Value]
+	{
+		/// <summary>Our key value</summary>
+		internal Key _Key;
+		/// <summary>Our stored value</summary>
+		internal Value _Value;
+		/// <summary>Our parent node</summary>
+		internal RedBlackNode[Key, Value] Parent;
+		/// <summary>Our left child node</summary>
+		internal RedBlackNode[Key, Value] Left;
+		/// <summary>Our right child node</summary>
+		internal RedBlackNode[Key, Value] Right;
+		/// <summary>Whether we are a black (as opposed to a red) node</summary>
+		internal bool IsBlack;
+		/// <summary>Whether we are a red (as opposed to a black) node</summary>
+		internal bool IsRed
+		{
+			get { return !IsBlack; }
+			set { IsBlack = !value; }
+		}
+		
+		
+		// Constructor
+		/// <summary>A plain constructor that creates a red node by default</summary>
+		internal fcn new(Key key, Value value, RedBlackNode[Key, Value] parent)
+		{
+			_Key = key;
+			_Value = value;
+			Parent = parent;
+		}
+		
+		
+		/// <summary>Recovers our grandparent node (the parent of our parent)</summary>
+		internal RedBlackNode[Key, Value] Grandparent { get { return Parent == null ? null : Parent.Parent; } }
+		/// <summary>Recovers our sibling node (the other child of our parent)</summary>
+		internal RedBlackNode[Key, Value] Sibling { get { return Parent == null ? null : (this == Parent.Left ? Parent.Right : Parent.Left); } }
+		/// <summary>Recovers our uncle node (the other child of our grandparent)</summary>
+		internal RedBlackNode[Key, Value] Uncle
+		{
+			get
+			{
+				var grandparent = Grandparent;
+				if (grandparent == null) {
+					return null;
+				} else {
+					return Parent == grandparent.Left ? grandparent.Right : grandparent.Left;
+				}
+			}
+		}
+	}
+	
+	/// <summary>An associate array class that builds a one-to-one mapping from keys to values. Uses a red--black tree behind the scenes. The 'Comparator'
+	/// class is used to determine the total weak ordering between the keys (to decide 'a < b'), but the type 'Key' is expected to implement an '==' comparison
+	/// with itself. 'Value' is also expected to implement the '==' comparison with itself for the 'ContainsValue' operation.</summary>
+	/// <typeparam name="Comparator">The class describing the comparison object to use. Must implement 'KLess[Key]', which defined a single member
+	/// 'fcn Compare(Key a, Key b) -> bool'. The default 'Less[Key]' simple applied the '<' operator, which will work for numeric types or user-defined overloads.</typeparam>
+	public abstract class AssociateArray[Key, Value, Comparator : KLess[Key] = Less[Key]]
+	{
+		/// <summary>Our comparison operator on the elements</summary>
+		private Comparator comparator = Comparator();
+		/// <summary>Our root node in the tree</summary>
+		protected inline RedBlackNode[Key, Value] root { get; private set; }
+		/// <summary>The number of 'Node's that are in the map</summary>
+		public inline int Count { get; private set; }
+		
+		
+		/// <summary>Whether the node or its sub-nodes contain any of the specified values</summary>
+		protected fcn SubContainsValue(RedBlackNode[Key, Value] node, Value values+) -> bool
+		{
+			for value in values {
+				if (node._Value == value) {
+					return true;
+				}
+			}
+			return node.Left != null && SubContainsValue(node.Left, values) || node.Right != null && SubContainsValue(node.Right, values);
+		}
+		
+		/// <summary>Clear the contents of the associative array</summary>
+		public fcn Clear()
+		{
+			if (root == null) {
+				// Already done
+			} else {
+				FreeClear(root);
+			}
+			Count = 0;
+		}
+		/// <summary>Free and clear the nodes at 'node' and below</summary>
+		private fcn FreeClear(RedBlackNode[Key, Value] node)
+		{
+			if (node.Left != null) {
+				FreeClear(node.Left);
+			}
+			if (node.Right != null) {
+				FreeClear(node.Right);
+			}
+			Jam.Free(node);
+		}
+		
+		/// <summary>Find the node which corresponds to the given 'key', if there is any</summary>
+		protected fcn FindNode(Key key) -> RedBlackNode[Key, Value]
+		{
+			var node = root;
+			while (node != null) {
+				if (node._Key == key) {
+					return node;
+				}
+				if (comparator.Compare(key, node._Key)) {
+					node = node.Left;
+				} else {
+					node = node.Right;
+				}
+			}
+			return node;
+		}
+		
+		/// <summary>Place all the nodes into 'nodes' sequentially</summary>
+		protected fcn GetNodes(RedBlackNode[Key, Value] node, primitive RedBlackNode[Key, Value][] nodes, int &ix)
+		{
+			if (node.Left != null) {
+				GetNodes(node.Left, nodes, ix);
+			}
+			// Insert ourselves
+			nodes(ix++) = node;
+			if (node.Right != null) {
+				GetNodes(node.Right, nodes, ix);
+			}
+		}
+		
+		/// <summary>Insert a node into the tree and conducts the necessary balancing operations</summary>
+		protected fcn InsertNode(Key key, Value value) -> RedBlackNode[Key, Value]
+		{
+			RedBlackNode[Key, Value] node = null;
+			if (root == null) {
+				root = RedBlackNode[Key, Value](key, value, null);
+				node = root;
+				++Count;
+			} else {
+				var subNode = root;
+				for break {
+					if (comparator.Compare(key, subNode._Key)) {
+						// Go down the left branch
+						if (subNode.Left == null) {
+							// Just insert it here
+							node = RedBlackNode[Key, Value](key, value, subNode);
+							subNode.Left = node;
+							++Count;
+						} else {
+							subNode = subNode.Left;
+							continue;
+						}
+					} else {
+						if (key == subNode._Key) {
+							throw Core.Exception("The given key was already present in the map: " + key);
+						}
+						// Go down the right branch
+						if (subNode.Right == null) {
+							// Just insert it here
+							node = RedBlackNode[Key, Value](key, value, subNode);
+							subNode.Right = node;
+							++Count;
+						} else {
+							subNode = subNode.Right;
+							continue;
+						}
+					}
+				}
+			}
+			// Save the original 'node' before doing balancing operations, which in their looping can overwrite 'node'
+			readonly var originalNode = node;
+			
+			// Conduct balancing operations after an insertion
+			for break {
+				RedBlackNode[Key, Value] parent, uncle, grandparent;
+				if ((parent = node.Parent) == null) {
+					node.IsBlack = true;
+					break;
+				} else if (parent.IsBlack) {
+					break;
+				} else if ((uncle = node.Uncle) && uncle.IsRed) {
+					node.Parent.IsBlack = true;
+					uncle.IsBlack = true;
+					(grandparent = node.Grandparent).IsRed = true;
+					// Loop back with 'grandparent'
+					node = grandparent;
+					continue;
+				} else {
+					grandparent = node.Grandparent;
+					if (node == parent.Right && parent == grandparent.Left) {
+						RotateLeft(parent);
+						node = node.Left;
+					} else if (node == parent.Left && parent == grandparent.Right) {
+						RotateRight(parent);
+						node = node.Right;
+					}
+					node.Parent.IsBlack = true;
+					(grandparent = node.Grandparent).IsRed = true;
+					parent = node.Parent;
+					if (node == parent.Left && parent == grandparent.Left) {
+						RotateRight(grandparent);
+					} else if (node == parent.Right && parent == grandparent.Right) {
+						RotateLeft(grandparent);
+					}
+				}
+			}
+			return originalNode;
+		}
+		
+		/// <summary>Remove all of the given keys from the map</summary>
+		/// <returns>'true' if any of the elements are found and removed; 'false' otherwise</returns>
+		public fcn Remove(Key key, Key keys+) -> bool
+		{
+			var @bool = Remove(key);
+			for key1 in keys {
+				@bool |= Remove(key1);
+			}
+			return @bool;
+		}
+		/// <summary>Remove the given key from the map</summary>
+		/// <returns>'true' if any of the elements are found and removed; 'false' otherwise</returns>
+		public fcn Remove(Key key) -> bool
+		{
+			var node = FindNode(key);
+			if (node == null) {
+				return false;
+			}
+			//throw Core.Exception("The given key was not present in the associative array: " + key) if node == null;
+			if (node.Left != null && node.Right != null) {
+				// Copy the information from the preceding node and then delete him instead
+				var prec = node.Left;
+				while (prec.Right != null) {
+					prec = prec.Right;
+				}
+				node._Key = prec._Key;
+				node._Value = prec._Value;
+				node = prec;
+			}
+			// Save the original node so we can be sure of deleting it
+			readonly var originalNode = node;
+			var child = node.Right == null ? node.Left : node.Right;
+			// Replace 'child' into 'node'`s position, bearing in mind that 'child' and 'parent' might be null
+			var parent = node.Parent;
+			if (child != null) {
+				child.Parent = parent;
+			}
+			if (parent == null) {
+				// We deleted the root
+				root = child;
+			} else {
+				if (node == parent.Left) {
+					parent.Left = child;
+				} else {
+					parent.Right = child;
+				}
+			}
+			
+			// Begin balancing everything
+			if (node.IsBlack) {
+				// Set 'node'`s color to 'child'`s
+				//node.IsBlack = child == null || child.IsBlack;
+				if (child != null && child.IsRed) {
+					child.IsBlack = true;
+				} else {
+					// Case 1
+					for break {
+						node = child;
+						if (node == null || node.Parent == null) {
+							// Nothing to be done
+						} else {
+							var sibling = node.Sibling;
+							if (sibling != null && sibling.IsRed) {
+								node.Parent.IsRed = true;
+								sibling.IsBlack = true;
+								if (node == node.Parent.Left) {
+									RotateLeft(node.Parent);
+								} else {
+									RotateRight(node.Parent);
+								}
+								// Refresh the sibling
+								sibling = node.Sibling;
+							}
+							if (node.Parent.IsBlack && sibling != null && sibling.IsBlack && (sibling.Left == null || sibling.Left.IsBlack) && (sibling.Right == null || sibling.Right.IsBlack)) {
+								sibling.IsRed = true;
+								// Loop back to 'Case 1' now using 'node.Parent' as 'node'
+								node = node.Parent;
+								continue;
+							} else if (node.Parent.IsRed && sibling != null && sibling.IsBlack && (sibling.Left == null || sibling.Left.IsBlack) && (sibling.Right == null || sibling.Right.IsBlack)) {
+								sibling.IsRed = true;
+								node.Parent.IsBlack = true;
+							} else {
+								if (sibling != null && sibling.IsBlack) {
+									if (node == node.Parent.Left && (sibling.Right == null || sibling.Right.IsBlack) && (sibling.Left != null && sibling.Left.IsRed)) {
+										sibling.IsRed = true;
+										sibling.Left.IsBlack = true;
+										RotateRight(sibling);
+									} else if (node == node.Parent.Right && (sibling.Left == null || sibling.Left.IsBlack) && (sibling.Right != null && sibling.Right.IsRed)) {
+										sibling.IsRed = true;
+										sibling.Right.IsBlack = true;
+										RotateLeft(sibling);
+									}
+									// Refresh 'sibling'
+									sibling = node.Sibling;
+								}
+								sibling.IsBlack = node.Parent.IsBlack;
+								node.Parent.IsBlack = true;
+								if (node == node.Parent.Left) {
+									if (sibling.Right != null) {
+										sibling.Right.IsBlack = true;
+									}
+									RotateLeft(node.Parent);
+								} else if (node == node.Parent.Right) {
+									if (sibling.Left != null) {
+										sibling.Left.IsBlack = true;
+									}
+									RotateRight(node.Parent);
+								}
+							}
+						}
+					}
+				}
+			}
+			
+			// Delete the original node
+			node = originalNode;
+			Jam.Free(node);
+			--Count;
+			return true;
+		}
+		
+		/// <summary>Rotate the tree left around the given node</summary>
+		protected fcn RotateLeft(RedBlackNode[Key, Value] node)
+		{
+			var newTop = node.Right;
+			node.Right = newTop.Left;
+			newTop.Left = node;
+			var parent = node.Parent;
+			if (parent == null) {
+				// Done
+			} else if (node == parent.Right) {
+				parent.Right = newTop;
+			} else {
+				parent.Left = newTop;
+			}
+			node.Parent = newTop;
+			newTop.Parent = parent;
+			if (root == node) {
+				root = newTop;
+			}
+		}
+		/// <summary>Rotate the tree right around the given node</summary>
+		protected fcn RotateRight(RedBlackNode[Key, Value] node)
+		{
+			var newTop = node.Left;
+			node.Left = newTop.Right;
+			newTop.Right = node;
+			var parent = node.Parent;
+			if (parent == null) {
+				// Done
+			} else if (node == parent.Right) {
+				parent.Right = newTop;
+			} else {
+				parent.Left = newTop;
+			}
+			node.Parent = newTop;
+			newTop.Parent = parent;
+			if (root == node) {
+				root = newTop;
+			}
+		}
+		
+		/// <summary>Verify that the tree is in the proper form of a red--black tree. A 'Core.Exception' is thrown if anything is invalid.</summary>
+		public fcn VerifyTree()
+		{
+			if (root != null) {
+				throw Core.Exception("The root node cannot be red") if root.IsRed;
+				int maxLength = -1;
+				VerifyTree(root, maxLength, 0);
+			}
+		}
+		/// <summary>Verify the tree properties at and below the given node</summary>
+		private fcn VerifyTree(RedBlackNode[Key, Value] node, int &maxLength, int depth)
+		{
+			if (node.IsRed) {
+				throw Core.Exception("All children of a red node must be black") if node.Right != null && node.Right.IsRed || node.Left != null && node.Left.IsRed;
+			} else {
+				++depth;
+			}
+			if (node.Left != null) {
+				VerifyTree(node.Left, maxLength, depth);
+			}
+			if (node.Right != null) {
+				VerifyTree(node.Right, maxLength, depth);
+			}
+			if (node.Left == null && node.Right == null) {
+				// We are a leaf, so we have to verify the 'same number of black nodes' constraint
+				if (maxLength == -1) {
+					// Set the max length
+					maxLength = depth;
+				} else if (maxLength != depth) {
+					throw Core.Exception("Every path leading from the root to a leaf node must have the same number of black nodes: " + maxLength + " vs. " + depth);
+				}
+			}
+		}
+	}
+}
+
+

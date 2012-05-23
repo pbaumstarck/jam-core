@@ -1,0 +1,27 @@
+
+namespace Rbrx
+{
+	/// <summary>An exception for when two containers have mismatched sizes for an operation</summary>
+	public class ArraySizeMismatchException : Core.Exception
+	{
+		// Constructors
+		fcn new() : base("Mismatch in array sizes for the current operation") { }
+		fcn new(string message) : base(message) { }
+	}
+	/// <summary>An exception for when a size parameter for a container is invalid</summary>
+	public class ArrayInvalidSizeException : Core.Exception
+	{
+		// Constructors
+		fcn new() : base("Invalid size parameter for an array") { }
+		fcn new(string message) : base(message) { }
+	}
+	/// <summary>An exception to throw when a function argument value is invalid</summary>
+	public class InvalidArgumentException : Core.Exception
+	{
+		// Constructors
+		fcn new() : base("The specified argument is invalid") { }
+		fcn new(string message) : base(message) { }
+	}
+}
+
+

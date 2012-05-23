@@ -1,0 +1,139 @@
+
+namespace Rbrx.Structures
+{
+	/// <summary>A stack for elements of a certain type</summary>
+	public class Stack[T]
+	{
+		/// <summary>The capacity size that, until we reach it, we should double the size of the 'items' array, and thereafter only keep adding 'doublingSize' to it</summary>
+		private const int doublingSize = 1024;
+		/// <summary>The items of the stack</summary>
+		primitive T[] items;
+		/// <summary>The allocated size of 'items'</summary>
+		private int capacity { get { return items.Length; } }
+		/// <summary>The number of items on the stack</summary>
+		inline public int Count { get; private set; }
+		
+		
+		// Constructors
+		/// <summary>Creates a stack and pushes all the values</summary>
+		/// <param name="push">Specifies that we should be pushing values, to differentiate this from the 'new(int)' constructor when 'T' is 'int'</param>
+		fcn new(bool push, T values+)
+		{
+			var cap = #values;
+			if (cap < 8) {
+				cap = 8;
+			}
+			Count = 0;
+			items = Jam.Malloc[T](cap);
+			for value in values {
+				Push(value);
+			}
+		}
+		/// <summary>Allocates a stack with the given starting capacity</summary>
+		fcn new(int capacity = 8)
+		{
+			throw Core.Exception("Explicitly supplied stack capacity must be greater than 0") if capacity <= 0;
+			Count = 0;
+			items = Jam.Malloc[T](capacity);
+		}
+		
+		
+		/// <summary>Pushes the values onto the top of the stack</summary>
+		public fcn Push(T values+)
+		{
+			for value in values {
+				if (++Count > capacity) {
+					// Must re-allocate 'items'
+					int newCapacity;
+					if (capacity >= doublingSize) {
+						// Just add 1024 to the capacity
+						newCapacity = capacity + doublingSize;
+					} else {
+						// Just double the capacity
+						newCapacity = capacity << 1;
+					}
+					// Allocate the new array and copy the items over
+					var newItems = Jam.Malloc[T](newCapacity);
+					Jam.Memcpy(newItems, items, Count - 1);
+					items = newItems;
+				}
+				items(Count - 1) = value;
+			}
+		}
+		/// <summary>Pops the requested number of values from the top of the stack, and returns the last one popped</summary>
+		public fcn Pop(int nValues = 1) -> T
+		{
+			throw Core.Exception("Must pop at least one value") if nValues < 1;
+			T ret;
+			for break {
+				--Count;
+				ret = items(Count);
+				// Check if we should down-allocate
+				int newCapacity = capacity;
+				if (capacity >= doublingSize) {
+					// Check if we have more than '2 * doubling' what we want
+					if (capacity >= Count + (doublingSize << 1)) {
+						// Drop 'doublingSize' elements
+						newCapacity = capacity - doublingSize;
+					}
+				} else if (capacity >= 32) {
+					// Check if we have more than 4 times what we want
+					if (capacity >= (Count << 2)) {
+						// Halve the capacity
+						newCapacity = capacity >> 1;
+					}
+				}
+				if (newCapacity != capacity) {
+					// We have to re-allocate, but we only need to copy over 'Count' elements
+					var newItems = Jam.Malloc[T](newCapacity);
+					if (Count > 0) {
+						Jam.Memcpy(newItems, items, Count);
+					}
+					items = newItems;
+				}
+				if (#for + 1 < nValues) {
+					continue;
+				}
+			}
+			return ret;
+		}
+		/// <summary>Returns an element the specified number of spaces back from the top of the stack without removing it</summary>
+		public fcn Peek(int nBack = 0) -> T
+		{
+			return items(Count - 1 - nBack);
+		}
+		
+		/// <summary>Returns true if any of the elements are found in the stack</summary>
+		public fcn Contains(T values+) -> bool
+		{
+			for i in Count - 1 : -1 : 0 {
+				var item = items(i);
+				for value in values {
+					if (value == item) {
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+		
+		/// <summary>An enumerator through the elements of the stack from top to bottom</summary>
+		public enumerator fcn Values() -> T
+		{
+			if (Count <= 0) {
+				return break;
+			}
+			for i in Count - 1 : -1 : 0 {
+				return items(i);
+			}
+		}
+		
+		/// <summary>Clear the contents of the stack but retain the allocated capacity</summary>
+		public fcn Clear()
+		{
+			Count = 0;
+		}
+	}
+}
+
+
