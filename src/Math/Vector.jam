@@ -1,0 +1,571 @@
+
+using Rbrx.Math;
+using Rbrx.Structures;
+
+namespace Rbrx.Math
+{
+	/// <summary>A 1-D vector that is dynamically resizeable on out-of-range 'set's, and which can serve as a 2-D container</summary>
+	class Vector[T] : T[]
+	{
+		/// <summary>The number of dimensions in the container</summary>
+		public const int Ndims = 1;
+		/// <summary>The values of the matrix</summary>
+		private primitive T[] values;
+		/// <summary>The number of allocated elements in 'values'</summary>
+		private int allocNumel;
+		/// <summary>Whether this is a row vector or column vector</summary>
+		inline internal bool IsRowVector { get; private set; }
+		/// <summary>The number of elements in the vector</summary>
+		inline public int Numel { get; private set; }
+		
+		/// <summary>The size that, until the array reaches it, we double its size in dynamic allocation. After this we add 'doublingSize' in pieces.</summary>
+		private const int doublingSize = 1024;
+		
+		/// <summary>The linear number of elements</summary>
+		public int Count { get { return Numel; } }
+		/// <summary>The general 'Size' function</summary>
+		public fcn Size(int dim) -> int
+		{
+			throw Core.Exception("Invalid argument") if dim < 0;
+			switch (dim) {
+				case 0 => return Numel;
+				case 1 => return IsRowVector ? 1 : Numel;
+				case 2 => return IsRowVector ? Numel : 1;
+				default => return 1;
+			}
+		}
+		
+		
+		// Constructor
+		/// <summary>Constructor which takes a numel count and optional explicit values to start filling into the vector</summary>
+		public fcn new(int nValues, T values*)
+		{
+			if (nValues < 0) {
+				throw Core.Exception("Vector size cannot be negative");
+			}
+			// Allocate the values and set our sizes
+			this.values = Jam.Malloc[T](nValues);
+			allocNumel = Numel = nValues;
+			
+			// Write the 'values' into the matrix in linear order
+			int i = 0;
+			bool overrun = false;
+			for value in values {
+				if (overrun) {
+					throw Core.Exception();
+				}
+				this.values(i) = value;
+				overrun = ++i == Numel;
+			}
+		}
+		/// <summary>Constructor that accepts a row/column orientation and a nargin value</summary>
+		public fcn new(bool IsRowVector, int nValues)
+		{
+			this.IsRowVector = IsRowVector;
+			if (nValues < 0) {
+				throw Core.Exception("Vector size cannot be negative");
+			}
+			// Allocate the values and set our sizes
+			this.values = Jam.Malloc[T](nValues);
+			allocNumel = Numel = nValues;
+		}
+		
+		
+		/// <summary>Copy this matrix into a new one that is a tight allocation (no extraneous values)</summary>
+		public fcn Copy() -> Vector[T]
+		{
+			var ret = Vector[T](Numel);
+			Jam.Memcpy(ret.values, this.values, Numel);
+			return ret;
+		}
+		
+				
+		/// <summary>The plain 1-D indexer</summary>
+		public T this(int i)
+		{
+			get
+			{
+				throw Core.IndexOutOfRangeException() if i < 0 || i >= Numel;
+				return values(i);
+			}
+			set
+			{
+				throw Core.IndexOutOfRangeException() if i < 0;
+				if (i >= Numel) {
+					EnsureSize(i + 1);
+				}
+				values(i) = value;
+			}
+		}
+		/// <summary>A vectorized indexer which constructs a sub-array</summary>
+		public Output this[Output = Vector[T]](int[] ixes)
+		{
+			get
+			{
+				readonly var n = ixes.Count;
+				var ret = Output(n);
+				for i in ixes {
+					throw Core.IndexOutOfRangeException() if i < 0 || i >= Numel;
+					ret(#i) = values(i);
+				}
+				return ret;
+			}
+			set
+			{
+				readonly var n = ixes.Count;
+				throw ArraySizeMismatchException() if n != value.Count;
+				for i in ixes {
+					throw Core.IndexOutOfRangeException() if i < 0 || i >= Numel;
+					values(i) = value(#i);
+				}
+			}
+		}
+		
+		/// <summary>Ensure that the matrix is allocated up to these sizes</summary>
+		private fcn EnsureSize(int newSize)
+		{
+			if (allocNumel >= newSize) {
+				Numel = newSize;
+				// That was easy
+				return;
+			}
+			var newAlloc = allocNumel;
+			while (newAlloc < doublingSize && newAlloc < newSize) {
+				newAlloc <<= 1;
+			}
+			while (newAlloc < newSize) {
+				newAlloc += doublingSize;
+			}
+			var newValues = Jam.Malloc[T](newAlloc);
+			// Copy over the old 'Numel' elements
+			Jam.Memcpy[T](newValues, values, Numel);
+			// Update our members
+			this.values = newValues;
+			allocNumel = newAlloc;
+			Numel = newSize;
+		}
+		
+		
+		// *** Operators ***
+		/// <summary>Adds two vectors together by applying the '+' operator on their elements, and also merging their element types</summary>
+		public static fcn +[U](Vector[T] vec1, Vector[U] vec2) -> Vector[T * U]
+		{
+			throw Core.NullReferenceException() if vec1 == null || vec2 == null;
+			throw ArraySizeMismatchException("Vector size mismatch: " + vec1.Numel + ", " + vec2.Numel) if vec1.Numel != vec2.Numel;
+			throw ArraySizeMismatchException("Row/column vector mismatch: " + (vec1.IsRowVector ? "row" : "column") + " vs. " + (vec2.IsRowVector ? "row" : "column"))
+				if vec1.IsRowVector ~ vec2.IsRowVector;
+			var ret = Vector[T * U](vec1.Numel);
+			for i in 0 : vec1.Numel - 1 {
+				ret(i) = vec1(i) + vec2(i);
+			}
+			return ret;
+		}
+		/// <summary>Adds a singleton value to all elements of the vector using the '+' operator, returning a vector that has a merged element type</summary>
+		#[commutative]
+		public static fcn +[U : Jam.KSingleton](Vector[T] vec, U value) -> Vector[T * U]
+		{
+			throw Core.NullReferenceException() if vec == null;
+			var ret = Vector[T * U](vec.Numel);
+			for i in 0 : vec.Numel - 1 {
+				ret(i) = vec(i) + value;
+			}
+			return ret;
+		}
+		
+		/// <summary>A compound-plus operator with a singleton</summary>
+		public fcn +=[U : Jam.KSingleton](U value) -> Vector[T]
+		{
+			for i in 0 : Numel - 1 {
+				this.values(i) += value;
+			}
+			return this;
+		}
+		/// <summary>A compound-plus operator with another vector</summary>
+		public fcn +=[U](Vector[U] vec) -> Vector[T]
+		{
+			throw Core.NullReferenceException() if vec == null;
+			throw ArraySizeMismatchException("Vector size mismatch: " + this.Numel + ", " + vec.Numel) if this.Numel != vec.Numel;
+			throw ArraySizeMismatchException("Row/column vector mismatch: " + (this.IsRowVector ? "row" : "column") + " vs. " + (vec.IsRowVector ? "row" : "column"))
+				if this.IsRowVector ~ vec.IsRowVector;
+			for i in 0 : Numel - 1 {
+				this.values(i) += vec(i);
+			}
+			return this;
+		}
+		
+		
+		/// <summary>Takes the difference of two vectors by applying the '-' operator on their elements, and also merging their element types</summary>
+		public static fcn -[U](Vector[T] vec1, Vector[U] vec2) -> Vector[T * U]
+		{
+			throw Core.NullReferenceException() if vec1 == null || vec2 == null;
+			throw ArraySizeMismatchException("Vector size mismatch: " + vec1.Numel + ", " + vec2.Numel) if vec1.Numel != vec2.Numel;
+			throw ArraySizeMismatchException("Row/column vector mismatch: " + (vec1.IsRowVector ? "row" : "column") + " vs. " + (vec2.IsRowVector ? "row" : "column"))
+				if vec1.IsRowVector ~ vec2.IsRowVector;
+			var ret = Vector[T * U](vec1.Numel);
+			for i in 0 : vec1.Numel - 1 {
+				ret(i) = vec1(i) - vec2(i);
+			}
+			return ret;
+		}
+		/// <summary>Subtracts a singleton value from all elements of the vector using the '-' operator, returning a vector that has a merged element type</summary>
+		public static fcn -[U : Jam.KSingleton](Vector[T] vec, U value) -> Vector[T * U]
+		{
+			throw Core.NullReferenceException() if vec == null;
+			var ret = Vector[T * U](vec.Numel);
+			for i in 0 : vec.Numel - 1 {
+				ret(i) = vec(i) - value;
+			}
+			return ret;
+		}
+		/// <summary>Subtracts from a singleton value all elements of the vector using the '-' operator, returning a vector that has a merged element type</summary>
+		public static fcn -[U : Jam.KSingleton](U value, Vector[T] vec) -> Vector[T * U]
+		{
+			throw Core.NullReferenceException() if vec == null;
+			var ret = Vector[T * U](vec.Numel);
+			for i in 0 : vec.Numel - 1 {
+				ret(i) = value - vec(i);
+			}
+			return ret;
+		}
+		
+		/// <summary>A compound-minus operator with a singleton</summary>
+		public fcn -=[U : Jam.KSingleton](U value) -> Vector[T]
+		{
+			for i in 0 : Numel - 1 {
+				this.values(i) -= value;
+			}
+			return this;
+		}
+		/// <summary>A compound-minus operator with another vector</summary>
+		public fcn -=[U](Vector[U] vec) -> Vector[T]
+		{
+			throw Core.NullReferenceException() if vec == null;
+			throw ArraySizeMismatchException("Vector size mismatch: " + this.Numel + ", " + vec.Numel) if this.Numel != vec.Numel;
+			throw ArraySizeMismatchException("Row/column vector mismatch: " + (this.IsRowVector ? "row" : "column") + " vs. " + (vec.IsRowVector ? "row" : "column"))
+				if this.IsRowVector ~ vec.IsRowVector;
+			for i in 0 : Numel - 1 {
+				this.values(i) -= vec(i);
+			}
+			return this;
+		}
+		
+		
+		/// <summary>Multiplies the two vectors together, producing either an inner or an outer product depending on their orientations</summary>
+		public static fcn *[U](Vector[T] vec1, Vector[U] vec2) -> Matrix[T * U]
+		{
+			throw Core.NullReferenceException() if vec1 == null || vec2 == null;
+			throw ArraySizeMismatchException("Vector size mismatch: " + vec1.Numel + ", " + vec2.Numel) if vec1.Numel != vec2.Numel;
+			if (vec1.IsRowVector) {
+				if (vec2.IsRowVector) {
+					throw ArraySizeMismatchException("Cannot multiply two row vectors");
+				} else {
+					// This is an inner product
+					var value = 0 as (T * U);
+					for i in 0 : vec1.Numel - 1 {
+						value += vec1(i) * vec2(i);
+					}
+					return Matrix[T * U](1, 1, value);
+				}
+			} else {
+				if (vec2.IsRowVector) {
+					// This is an outer product
+					readonly var maxIx = vec1.Numel - 1;
+					var ret = Matrix[T * U](maxIx + 1, maxIx + 1);
+					for i in 0 : maxIx {
+						for j in 0 : maxIx {
+							ret(i, j) = vec1(i) * vec2(j);
+						}
+					}
+					return ret;
+				} else {
+					throw ArraySizeMismatchException("Cannot multiply two column vectors");		
+				}
+			}
+		}
+		/// <summary>Element-wise multiplies the two vectors together</summary>
+		public static fcn .*[U](Vector[T] vec1, Vector[U] vec2) -> Vector[T * U]
+		{
+			throw Core.NullReferenceException() if vec1 == null || vec2 == null;
+			throw ArraySizeMismatchException("Vector size mismatch: " + vec1.Numel + ", " + vec2.Numel) if vec1.Numel != vec2.Numel;
+			throw ArraySizeMismatchException("Cannot element-wise multiply a row vector with a column vector") if vec1.IsRowVector ~ vec2.IsRowVector;
+			var ret = Vector[T * U](vec1.IsRowVector, vec1.Numel);
+			for i in 0 : vec1.Numel - 1 {
+				ret(i) = vec1(i) * vec2(i);
+			}
+			return ret;
+		}
+		/// <summary>Multiplies the vector by a scalar using the '*' operator, and merges its type with the element type</summary>
+		#[commutative]
+		public static fcn *[U : Jam.KSingleton](Vector[T] vec, U value) -> Vector[T * U]
+		{
+			throw Core.NullReferenceException() if vec == null;
+			readonly var maxIx = vec.Numel - 1;
+			var ret = Vector[T * U](maxIx + 1);
+			for i in 0 : maxIx {
+				ret(i) = vec(i) * value;
+			}
+			return ret;
+		}
+		
+		/// <summary>A compound-times operator with a singleton</summary>
+		public fcn *=[U : Jam.KSingleton](U value) -> Vector[T]
+		{
+			for i in 0 : Numel - 1 {
+				this.values(i) *= value;
+			}
+			return this;
+		}
+		/// <summary>A compound-times operator with another vector</summary>
+		public fcn *=[U](Vector[U] vec) -> Vector[T]
+		{
+			throw Core.NullReferenceException() if vec == null;
+			throw ArraySizeMismatchException("Vector size mismatch: " + this.Numel + ", " + vec.Numel) if this.Numel != vec.Numel;
+			throw ArraySizeMismatchException("Row/column vector mismatch: " + (this.IsRowVector ? "row" : "column") + " vs. " + (vec.IsRowVector ? "row" : "column"))
+				if this.IsRowVector ~ vec.IsRowVector;
+			for i in 0 : Numel - 1 {
+				this.values(i) *= vec(i);
+			}
+			return this;
+		}		
+		
+		
+		/// <summary>Divides the vector by a scalar using the '/' operator, and merges its type with the element type</summary>
+		public static fcn /[U : Jam.KSingleton](Vector[T] vec, U value) -> Vector[T * U]
+		{
+			throw Core.NullReferenceException() if vec == null;
+			readonly var maxIx = vec.Numel - 1;
+			var ret = Vector[T * U](maxIx + 1);
+			for i in 0 : maxIx {
+				ret(i) = vec(i) / value;
+			}
+			return ret;
+		}
+		/// <summary>Does element-wise division of the scalar by the vector using the '/' operator, and merges its type with the element type</summary>
+		public static fcn /[U : Jam.KSingleton](U value, Vector[T] vec) -> Vector[T * U]
+		{
+			throw Core.NullReferenceException() if vec == null;
+			readonly var maxIx = vec.Numel - 1;
+			var ret = Vector[T * U](maxIx + 1);
+			for i in 0 : maxIx {
+				ret(i) = value / vec(i);
+			}
+			return ret;
+		}
+		/// <summary>Element-wise divides the one vector by the other</summary>
+		public static fcn ./[U](Vector[T] vec1, Vector[U] vec2) -> Vector[T * U]
+		{
+			throw Core.NullReferenceException() if vec1 == null || vec2 == null;
+			throw ArraySizeMismatchException("Vector size mismatch: " + vec1.Numel + ", " + vec2.Numel) if vec1.Numel != vec2.Numel;
+			throw ArraySizeMismatchException("Cannot element-wise divide a row vector with a column vector") if vec1.IsRowVector ~ vec2.IsRowVector;
+			var ret = Vector[T * U](vec1.IsRowVector, vec1.Numel);
+			for i in 0 : vec1.Numel - 1 {
+				ret(i) = vec1(i) ./ vec2(i);
+			}
+			return ret;
+		}
+		
+		/// <summary>A compound-division operator with a singleton</summary>
+		public fcn /=[U : Jam.KSingleton](U value) -> Vector[T]
+		{
+			for i in 0 : Numel - 1 {
+				this.values(i) /= value;
+			}
+			return this;
+		}
+		/// <summary>A compound-division operator with another vector</summary>
+		public fcn /=[U](Vector[U] vec) -> Vector[T]
+		{
+			throw Core.NullReferenceException() if vec == null;
+			throw ArraySizeMismatchException("Vector size mismatch: " + this.Numel + ", " + vec.Numel) if this.Numel != vec.Numel;
+			throw ArraySizeMismatchException("Row/column vector mismatch: " + (this.IsRowVector ? "row" : "column") + " vs. " + (vec.IsRowVector ? "row" : "column"))
+				if this.IsRowVector ~ vec.IsRowVector;
+			for i in 0 : Numel - 1 {
+				this.values(i) /= vec(i);
+			}
+			return this;
+		}
+		
+				
+		/// <summary>Element-wise exponentiation of one vector by the other</summary>
+		public static fcn .^[U](Vector[T] vec1, Vector[U] vec2) -> Vector[T * U]
+		{
+			throw Core.NullReferenceException() if vec1 == null || vec2 == null;
+			throw ArraySizeMismatchException("Vector size mismatch: " + vec1.Numel + ", " + vec2.Numel) if vec1.Numel != vec2.Numel;
+			throw ArraySizeMismatchException("Cannot element-wise exponentiate a row vector with a column vector") if vec1.IsRowVector ~ vec2.IsRowVector;
+			var ret = Vector[T * U](vec1.IsRowVector, vec1.Numel);
+			for i in 0 : vec1.Numel - 1 {
+				ret(i) = vec1(i) ^ vec2(i);
+			}
+			return ret;
+		}
+		/// <summary>A compound-exponentiation operator with a singleton</summary>
+		public fcn ^=[U](U value) -> Vector[T]
+		{
+			for i in 0 : this.Numel - 1 {
+				this.values(i) ^= value;
+			}
+			return this;
+		}
+		
+		
+		// Logical operators
+		
+		/// <summary>Compares this vector element-wise with another using the '==' operator, and returns true if the sizes are the same and all elements match</summary>
+		public fcn Equals[U](Vector[U] vec) -> bool
+		{
+			throw Core.NullReferenceException() if vec == null;
+			return false if IsRowVector ~ vec.IsRowVector;
+			readonly var n = Count;
+			return false if vec.Count != n;
+			for i in 0 : n - 1 {
+				return false if !(this(i) == vec(i));
+			}
+			return true;
+		}
+		/// <summary>Compares this vector element-wise with another using the '!=' operator, and returns true if the sizes are the unequal or any elements do not match</summary>
+		public fcn NotEquals[U](Vector[U] vec) -> bool
+		{
+			throw Core.NullReferenceException() if vec == null;
+			return true if IsRowVector ~ vec.IsRowVector;
+			readonly var n = Count;
+			return true if vec.Count != n;
+			for i in 0 : n - 1 {
+				return true if this(i) != vec(i);
+			}
+			return false;
+		}
+		
+		
+		/// <summary>Compute the inner product of this vector with the input vector</summary>
+		public fcn InnerProduct(Vector[T] vec) -> T
+		{
+			throw Core.NullReferenceException() if vec == null;
+			throw ArraySizeMismatchException("Vector size mismatch: " + this.Numel + ", " + vec.Numel) if this.Numel != vec.Numel;
+			var ret = 0 as T;
+			for i in 0 : Numel - 1 {
+				ret += this.values(i) * vec.values(i);
+			}
+			return ret;
+		}
+		/// <summary>Get the norm of this vector</summary>
+		public T Norm
+		{
+			get
+			{
+				var sum = 0 as T;
+				for i in 0 : Numel - 1 {
+					sum += this.values(i) * this.values(i);
+				}
+				return Sqrt(sum) as T;
+			}
+		}
+		/// <summary>Get a normalized version of this vector</summary>
+		public fcn GetNormalized() -> Vector[T]
+		{
+			var invNorm = (1 as T) / Norm;
+			var ret = Vector[T](this.Numel);
+			for i in 0 : Numel - 1 {
+				ret.values(i) = this.values(i) * invNorm;
+			}
+			return ret;
+		}
+		/// <summary>Normalize this vector and return it</summary>
+		public fcn DoNormalize() -> Vector[T]
+		{
+			var invNorm = (1 as T) / Norm;
+			for i in 0 : Numel - 1 {
+				this.values(i) *= invNorm;
+			}
+			return this;
+		}
+		/// <summary>Performs the projection of 'vec' onto this vector, defined as '&lt;vec, this&gt; / &lt;this, this&gt; * this'</summary>
+		public fcn Project(Vector[T] vec) -> Vector[T]
+		{
+			throw Core.NullReferenceException() if vec == null;
+			var coeff = this.InnerProduct(vec) / this.InnerProduct(this);
+			var ret = Vector[T](Numel);
+			for i in 0 : Numel - 1 {
+				ret.values(i) = coeff * this.values(i);
+			}
+			return ret;
+		}
+		
+		/// <summary>Returns a transposed copy of the vector</summary>
+		public static fcn \' /* ' */(Vector[T] vec) -> Vector[T]
+		{
+			throw Core.NullReferenceException() if vec == null;
+			var ret = vec.Copy();
+			ret.IsRowVector = !vec.IsRowVector;
+			return ret;
+		}
+		
+		
+		/// <summary>Enumerator over the values in row-major (row-contiguous) order</summary>
+		enumerator fcn Values() -> T
+		{
+			for i in 0 : Numel - 1 {
+				return values(i);
+			}
+		}
+		
+		
+		/// <summary>Our 'ToString' implementation, which prints a nice grid of all the numbers</summary>
+		override fcn ToString() -> string
+		{
+			// Do 'ToString' on all the elements to find the max size
+			var strs = Jam.Malloc[string](Numel);
+			int maxSize = -1;
+			for i in 0 : Numel - 1 {
+				strs(#i) = str = values(i).ToString();
+				if (str.Length > maxSize) {
+					maxSize = str.Length;
+				}
+			}
+			var sb = JamStringBuilder(maxSize * Numel);
+			sb.Append(Size(1).ToString());
+			sb.Append("-by-");
+			sb.Append(Size(2).ToString());
+			sb.AppendLine(":");
+			// Now print the elemnts with proper padding
+			if (IsRowVector) {
+				sb.Append('[');
+				for i in 0 : Numel - 1 {
+					var str = strs(i);
+					if (i > 0) {
+						// Print spacing from previous element
+						sb.Append(' ');
+					}
+					// Print padding
+					for wix in 0 : maxSize - str.Length - 1 {
+						sb.Append(' ');
+					}
+					sb.Append(str);
+				}
+				sb.Append(']');
+				sb.Append('\n');
+			} else {
+				for i in 0 : Numel - 1 {
+					sb.Append('[');
+					var str = strs(i);
+					// Print padding
+					for wix in 0 : maxSize - str.Length - 1 {
+						sb.Append(' ');
+					}
+					sb.Append(str);
+					sb.Append(']');
+					sb.Append('\n');
+				}
+			}
+			var ret = sb.ToString();
+			// Now free everything explicitly
+			for i in 0 : Numel - 1 {
+				Jam.Free(strs(i));
+			}
+			Jam.Free(strs);
+			Jam.Free(sb);
+			return ret;
+		}
+	}
+}
+
+

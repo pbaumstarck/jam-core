@@ -1,0 +1,219 @@
+
+namespace Rbrx.Math
+{
+	/// <summary>Performs the quicksort algorithm on 'items', sorting the elements into ascending order using only the '<' and '==' operators</summary>
+	/// <citation>William H. Press , Saul A. Teukolsky , William T. Vetterling , Brian P. Flannery, "Numerical Recipes in C: The Art of Scientific Computing,"
+	/// Cambridge University Press, New York, NY, 1992, Section 8.2 "Quicksort."</citation>
+	/// <valuetemplate name="M">The size of sub-arrays sorted by straight insertion</valuetemplate>
+	/// <return name="ixes">An optional array of permutation indices such that the original 'items(ixes)' would yield the sorted items</return>
+	public static fcn Quicksort[T, OutputIxes = Vector[int], int M = 7](this T[] items) -> (OutputIxes ixes?)
+	{
+		throw Core.NullReferenceException() if items == null;
+		readonly var n = items.Count;
+		ixes = null;
+		if (n == 0) {
+			if (#ixes) {
+				ixes = OutputIxes(0);
+			}
+		} else if (n == 1) {
+			if (#ixes) {
+				var preIxes = OutputIxes(1);
+				preIxes(0) = 0;
+				ixes = preIxes;
+			}
+		} else {
+			// Use an integer vector to keep track of the sub-arrays, and use 50 as a reasonable upper bound for '2 * log_2(items.Count)', which accomodates an
+			// array of up to about 35 million elements.
+			var istack = Jam.Malloc[int](50);
+			try {
+				var ir = n - 1, _l = 0, jstack = 0;
+				if (!#ixes) {
+					for (; ; ) {
+						if (ir - _l < M) {
+							for (int j = _l +1; j <=ir; ++j) {
+								var a = items(j);
+								var i = j - 1;
+								for (; i >= _l; --i) {
+									var item = items(i);
+									break if item < a || item == a;
+									items(i + 1) = item;
+								}
+								items(i + 1) = a;
+							}
+							break if jstack == 0;
+							// Pop stack and begin a new round of partitioning
+							ir = istack(jstack--);
+							_l = istack(jstack--);
+						} else {
+							var k = (_l + ir) >> 1;
+							var temp = items(k);
+							items(k) = items(_l + 1);
+							items(_l + 1) = temp;
+							// Choose the median of the left, center, and right elements as the partitioning element a. Also rearrange so that
+							// 'items(_l) <= items(_l + 1) <= items(ir)'.
+							if (!(items(_l) < items(ir))) {
+								temp = items(_l);
+								items(_l) = items(ir);
+								items(ir) = temp;
+							}
+							if (!(items(_l + 1) < items(ir))) {
+								temp = items(_l + 1);
+								items(_l + 1) = items(ir);
+								items(ir) = temp;
+							}
+							if (!(items(_l) < items(_l + 1))) {
+								temp = items(_l);
+								items(_l) = items(_l + 1);
+								items(_l + 1) = temp;
+							}
+							// Initialize pointers for partitioning
+							i = _l + 1;
+							var j = ir;
+							// Partitioning element
+							var a = items(_l + 1);
+							for (; ; ) {
+								do {
+									// Scan up to find element '< a'
+									++i;
+								} while (items(i) < a);
+								do {
+									// Scan down to find element '> a'
+									--j;
+								} while (!(items(j) < a));
+								// Pointers crossed; partitioning complete
+								break if j < i;
+								temp = items(i);
+								items(i) = items(j);
+								items(j) = temp;
+							}
+							items(_l + 1) = items(j);
+							items(j) = a;
+							jstack += 2;
+							// Push pointers to larger sub-array onto the stack, and process the smaller sub-array immediately
+							throw Core.Exception("Stack size too small in 'Quicksort'") if jstack > 50;
+							if (ir - i + 1 >= j - _l) {
+								istack(jstack) = ir;
+								istack(jstack - 1) = i;
+								ir = j - 1;
+							} else {
+								istack(jstack) = j - 1;
+								istack(jstack - 1) = _l;
+								_l = i;
+							}
+						}
+					}
+				} else {
+					// Does the same algorithm but also doubles all permutations on the 'preIxes' array
+					// Initialize the indices array to the range '0 : n - 1'
+					var preIxes = OutputIxes(n);
+					for i in 0 : n - 1 {
+						preIxes(i) = i;
+					}
+					for (; ; ) {
+						if (ir - _l < M) {
+							for (int j = _l +1; j <=ir; ++j) {
+								var a = items(j);
+								var b = preIxes(j);
+								var i = j - 1;
+								for (; i >= _l; --i) {
+									var item = items(i);
+									break if item < a || item == a;
+									items(i + 1) = item;
+									preIxes(i + 1) = preIxes(i);
+								}
+								items(i + 1) = a;
+								preIxes(i + 1) = b;
+							}
+							break if jstack == 0;
+							// Pop stack and begin a new round of partitioning
+							ir = istack(jstack--);
+							_l = istack(jstack--);
+						} else {
+							var k = (_l + ir) >> 1;
+							var temp = items(k);
+							items(k) = items(_l + 1);
+							items(_l + 1) = temp;
+							var itemp = preIxes(k);
+							preIxes(k) = preIxes(_l + 1);
+							preIxes(_l + 1) = itemp;
+							// Choose the median of the left, center, and right elements as the partitioning element a. Also rearrange so that
+							// 'items(_l) <= items(_l + 1) <= items(ir)'.
+							if (!(items(_l) < items(ir))) {
+								temp = items(_l);
+								items(_l) = items(ir);
+								items(ir) = temp;
+								itemp = preIxes(_l);
+								preIxes(_l) = preIxes(ir);
+								preIxes(ir) = itemp;
+							}
+							if (!(items(_l + 1) < items(ir))) {
+								temp = items(_l + 1);
+								items(_l + 1) = items(ir);
+								items(ir) = temp;
+								itemp = preIxes(_l + 1);
+								preIxes(_l + 1) = preIxes(ir);
+								preIxes(ir) = itemp;
+							}
+							if (!(items(_l) < items(_l + 1))) {
+								temp = items(_l);
+								items(_l) = items(_l + 1);
+								items(_l + 1) = temp;
+								itemp = preIxes(_l);
+								preIxes(_l) = preIxes(_l + 1);
+								preIxes(_l + 1) = itemp;
+							}
+							// Initialize pointers for partitioning
+							i = _l + 1;
+							var j = ir;
+							// Partitioning element
+							var a = items(_l + 1);
+							var b = preIxes(_l + 1);
+							for (; ; ) {
+								do {
+									// Scan up to find element '< a'
+									++i;
+								} while (items(i) < a);
+								do {
+									// Scan down to find element '> a'
+									--j;
+								} while (!(items(j) < a));
+								// Pointers crossed; partitioning complete
+								break if j < i;
+								temp = items(i);
+								items(i) = items(j);
+								items(j) = temp;
+								itemp = preIxes(i);
+								preIxes(i) = preIxes(j);
+								preIxes(j) = itemp;
+							}
+							items(_l + 1) = items(j);
+							items(j) = a;
+							preIxes(_l + 1) = preIxes(j);
+							preIxes(j) = b;
+							jstack += 2;
+							// Push pointers to larger sub-array onto the stack, and process the smaller sub-array immediately
+							throw Core.Exception("Stack size too small in 'Quicksort'") if jstack > 50;
+							if (ir - i + 1 >= j - _l) {
+								istack(jstack) = ir;
+								istack(jstack - 1) = i;
+								ir = j - 1;
+							} else {
+								istack(jstack) = j - 1;
+								istack(jstack - 1) = _l;
+								_l = i;
+							}
+						}
+					}
+					ixes = preIxes;
+				}
+			} finally {
+				if (istack != null) {
+					Jam.Free(istack);
+				}
+			}
+		}
+		return ixes;
+	}
+}
+
+

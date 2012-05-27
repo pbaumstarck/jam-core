@@ -1,0 +1,94 @@
+﻿
+using Jam;
+
+namespace Rbrx.Math {
+	/// <summary>A complex wrapping type which supports basic operations</summary>
+	struct Complex[T : KReal] : KComplex[T] {
+		/// <summary>The real component of the number</summary>
+		public inline T Real { get; private set; }
+		/// <summary>The complex component of the number</summary>
+		public inline T Imag { get; private set; }
+		/// <summary>The magnitude of the complex number</summary>
+		public T Mag { get { return Math.Sqrt(Real * Real + Imag * Imag) as T; } }
+		/// <summary>Whether the number is real</summary>
+		public bool IsReal { get { return Imag == (0 as T); } }
+		
+		
+		// Constructor
+		/// <summary>A constructor that takes a real and imaginary components</summary>
+		fcn new(T @real, T imag) {
+			Real = @real;
+			Imag = imag;
+		}
+		
+		
+		/// <summary>Our 'ToString' implementation</summary>
+		override fcn ToString() -> string {
+			return Real + " + " + Imag + "i";
+		}
+		
+		/// <summary>Takes the square root of the complex number. The type of the result saturates to a floating-point number, which is at least 'single'.</summary>
+		/// <param name="principal">Whether to return the principal square root, i.e., that with a positive real component</param>
+		public fcn Sqrt(bool principal = true) -> Complex[T * single] {
+			var mag = Mag;
+			var gamma = Math.Sqrt( 0.5s * (Real + mag) );
+			var delta = Sgn(Imag) * Math.Sqrt( 0.5s * (-Real + mag) );
+			return principal ? Complex[T * single](gamma, delta) : Complex[T * single](-gamma, -delta);
+		}
+		
+		/// <summary>A special cast for literls tagged as complex (e.g., '7i')</summary>
+		/*static implicit fcn as[Jam.ComplexLiteralCast](T @complex) -> Complex[T] {
+			return Complex[T](0 as T, @complex);
+		}*/
+		
+		/// <summary>A cast from a single number to a wrapped complex version</summary>
+		public static fcn as(KReal @real) -> Complex[T] {
+			return Complex[T](@real, 0 as T);
+		}
+		/// <summary>Takes the unary minus of the complex value, which inverts both the real and imaginary parts</summary>
+		public static fcn -(Complex[T] value) -> Complex[T] {
+			return Complex[T](-value.Real, -value.Imag);
+		}
+		/// <summary>Adds two complex values</summary>
+		public static fcn +[V](Complex[T] value1, Complex[V] value2) -> Complex[T * V] {
+			return Complex[T * V](value1.Real + value2.Real, value1.Imag + value2.Imag);
+		}
+		/*/// <summary>Adds a singleton value to both our real and complex components</summary>
+		#[commutative]
+		public static fcn +[V : KSingleton](Complex[T] value1, V value2) => {
+			return Complex[T * V](value1.Real + value2, value1.Imag + value2);
+		}*/
+		/// <summary>Adds a real value to us</summary>
+		#[commutative]
+		public static fcn +[V : KReal](Complex[T] value1, V value2) -> Complex[T * V] {
+			return Complex[T * V](value1.Real + value2, value1.Imag);
+		}
+		/// <summary>Subtracts a complex value from us</summary>
+		public static fcn -[V](Complex[T] value1, Complex[V] value2) -> Complex[T * V] {
+			return Complex[T * V](value1.Real - value2.Real, value1.Imag - value2.Imag);
+		}
+		/// <summary>Scales us by a real value</summary>
+		#[commutative]
+		public static fcn *[V : KReal](V value1, Complex[T] value2) -> Complex[T * V] {
+			return Complex[T * V](value2.Real * value1, value2.Imag * value1);
+		}
+		/// <summary>Multiplies us by another complex value</summary>
+		public static fcn *[V : KReal](Complex[T] value1, Complex[V] value2) -> Complex[T * V] {
+			return Complex[T * V](value1.Real * value2.Real - value1.Imag * value2.Imag, value1.Real * value2.Imag + value1.Imag * value2.Real);
+		}
+		/// <summary>Divides us by a complex value</summary>
+		public static fcn /[V](Complex[T] value1, Complex[V] value2) -> Complex[T * V] {
+			var real2 = value2.Real;
+			var imag2 = value2.Imag;
+			var coeff = 1 / (real2 * real2 + imag2 * imag2);
+			return Complex[T * V](coeff * (value1.Real * real2 + value1.Imag * imag2), coeff * (value1.Imag * real2 - value1.Real * imag2));
+		}
+		/// <summary>Divides us by a real value</summary>
+		public static fcn /[V : KReal](Complex[T] value1, V value2) -> Complex[T * V] {
+			var coeff = 1 / value2;
+			return Complex[T * V](coeff * value1.Real, coeff * value1.Imag);
+		}
+	}
+}
+
+

@@ -1,0 +1,43 @@
+
+// Include this line in your '.jam' files in which you wish to use the 'algorithm' functions
+//$if (Cpp.Header || Cpp.Source) ${ #include <algorithm> }$
+
+$if (Cpp) {
+	#[extern]
+	namespace std
+	{
+        /// <summary>'extern' version of the STL 'pair&lt;first_type, second_type&gt;' type</summary>
+        public struct pair[T, S]
+        {
+            T first;
+            S second;
+			
+			/// <summary>Compares the equality of two pairs</summary>
+			static fcn ==(pair[T, S] pair1, pair[T, S] pair2) -> bool;
+			/// <summary>Compares the inequality of two pairs</summary>
+			static fcn !=(pair[T, S] pair1, pair[T, S] pair2) -> bool;
+			/// <summary>Determines if one pair is lexicographically less than the other</summary>
+			static fcn <(pair[T, S] pair1, pair[T, S] pair2) -> bool;
+			/// <summary>Determines if one pair is lexicographically less than or equal to the other</summary>
+			static fcn <=(pair[T, S] pair1, pair[T, S] pair2) -> bool;
+			/// <summary>Determines if one pair is lexicographically greater than the other</summary>
+			static fcn >(pair[T, S] pair1, pair[T, S] pair2) -> bool;
+			/// <summary>Determines if one pair is lexicographically greater than or equal to the other</summary>
+			static fcn >=(pair[T, S] pair1, pair[T, S] pair2) -> bool;
+        }
+		
+		// Iterator classes (reference: "http://www.cplusplus.com/reference/std/iterator/")
+		/// <summary>Allows reading from the iterator object, and iterating forward without a multi-pass guarantee</summary>
+        public struct InputIterator { }
+		/// <summary>Allows writing to the iterator object, and iterating forward without a multi-pass guarantee</summary>
+        public struct OutputIterator { }
+		/// <summary>Allows reading from the iterator object, and iterating forward with a multi-pass guarantee</summary>
+        public struct ForwardIterator : InputIterator, OutputIterator { }
+		/// <summary>Allows reading from the iterator object, and iterating forward and backward with a multi-pass guarantee</summary>
+        public struct BidirectionalIterator : ForwardIterator { }
+		/// <summary>Allows reading from the iterator object, and iterating forward and backward randomly with a multi-pass guarantee</summary>
+        public struct RandomAccessIterator : BidirectionalIterator { }
+	}
+}
+
+

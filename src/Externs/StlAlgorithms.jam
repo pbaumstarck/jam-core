@@ -1,0 +1,98 @@
+
+// Include this line in your '.jam' files in which you wish to use the 'algorithm' functions
+//$if (Cpp.Header || Cpp.Source) ${ #include <algorithm> }$
+
+$if (Cpp) {
+	#[extern]
+	namespace std
+	{
+		// Non-modifying sequence operations
+	
+        /// <summary>Returns the number of elements in the range '[first, last)' that match 'value'</summary>
+        public static fcn count[Iter : InputIterator, T](Iter first, Iter last, T value) -> int;
+        /// <summary>Returns the number of elements in the range '[first, last)' for which the predicate returns 'true'</summary>
+        public static fcn count_if[Iter : InputIterator](Iter first, Iter last, predicate) -> int;
+
+        /// <summary>Applies the given function object 'function' to the result of dereferencing every iterator in the range '[first, last)', in order</summary>
+        public static fcn for_each[Iter : InputIterator](Iter first, Iter last, function, predicate = null);
+        
+        /// <summary>Returns the first mismatching pair of elements from two ranges: one defined by '[first1, last1)' and another starting at 'first2'</summary>
+        public static fcn mismatch[Iter1 : InputIterator, Iter2 : InputIterator](Iter1 first1, Iter1 last1, Iter2 first2) -> pair[Iter1, Iter2];
+        /// <summary>Returns the first mismatching pair of elements (according to the predicate) from two ranges: one defined by '[first1, last1)' and another starting at 'first2'</summary>
+        public static fcn mismatch[Iter1 : InputIterator, Iter2 : InputIterator](Iter1 first1, Iter1 last1, Iter2 first2, predicate) -> pair[Iter1, Iter2];
+		
+        /// <summary>Returns true if the elements are the same in two ranges: one defined by '[first1, last1)' and another starting at 'first2'</summary>
+        public static fcn equal[Iter1 : InputIterator, Iter2 : InputIterator](Iter1 first1, Iter1 last1, Iter2 first2) -> bool;
+		/// <summary>Returns true if the elements are the same (according to the predicate) in two ranges: one defined by '[first1, last1)' and another starting at 'first2'</summary>
+        public static fcn equal[Iter1 : InputIterator, Iter2 : InputIterator](Iter1 first1, Iter1 last1, Iter2 first2, predicate) -> bool;
+
+        /// <summary>Finds the first element in the range '[first, last)' that matches 'value'</summary>
+        public static fcn find[Iter : InputIterator, T](Iter first, Iter last, T value) -> Iter;
+        /// <summary>Finds the first element in the range '[first, last)' that satisfies the predicate</summary>
+        public static fcn find_if[Iter : InputIterator, T](Iter first, Iter last, predicate) -> Iter;
+
+        /// <summary>Searches for the last subsequence of elements '[s_first, s_last)' in the range '[first, last)'</summary>
+        /// <returns>The iterator to the beginning of last subsequence '[s_first, s_last)' in range '[first, last)'. If no such subsequence is found, 'last' is returned.</returns>
+        public static fcn find_end[Iter1 : ForwardIterator, Iter2 : ForwardIterator](Iter1 first, Iter2 last, Iter2 s_first, Iter2 s_last) -> Iter1;
+		/// <summary>Searches for the last subsequence of elements '[s_first, s_last)' in the range '[first, last)' using the predicate</summary>
+        /// <returns>The iterator to the beginning of last subsequence '[s_first, s_last)' in range '[first, last)'. If no such subsequence is found, 'last' is returned.</returns>
+        public static fcn find_end[Iter1 : ForwardIterator, Iter2 : ForwardIterator](Iter1 first, Iter2 last, Iter2 s_first, Iter2 s_last, predicate) -> Iter1;
+
+        /// <summary>Searches the range '[first, last)' for any of the elements in the range '[s_first, s_last)'</summary>
+        public static fcn find_first_of[Iter1 : ForwardIterator, Iter2 : ForwardIterator](Iter1 first, Iter1 last, Iter2 s_first, Iter2 s_last ) -> Iter1;
+		/// <summary>Searches the range '[first, last)' for any of the elements in the range '[s_first, s_last)' with equality determined by the predicate</summary>
+        public static fcn find_first_of[Iter1 : ForwardIterator, Iter2 : ForwardIterator](Iter1 first, Iter1 last, Iter2 s_first, Iter2 s_last, predicate) -> Iter1;
+
+        /// <summary>Searches the range '[first, last)' for two consecutive identical elements, and returns the first identical element</summary>
+        public static fcn adjacent_find[Iter : ForwardIterator](Iter first, Iter last) -> Iter;
+		/// <summary>Searches the range '[first, last)' for two consecutive identical elements, and returns the first identical element (according to the predicate)</summary>
+        public static fcn adjacent_find[Iter : ForwardIterator](Iter first, Iter last, predicate) -> Iter;
+
+        /// <summary>Searches for the first subsequence of elements '[s_first, s_last)' in the range '[first, last)'</summary>
+        public static fcn search[Iter1 : ForwardIterator, Iter2 : ForwardIterator](Iter1 first, Iter1 last, Iter2 s_first, Iter2 s_last) -> Iter1;
+		/// <summary>Searches for the first subsequence of elements '[s_first, s_last)' in the range '[first, last)', with equality defined by the predicate</summary>
+        public static fcn search[Iter1 : ForwardIterator, Iter2 : ForwardIterator](Iter1 first, Iter1 last, Iter2 s_first, Iter2 s_last, predicate) -> Iter1;
+        
+		/// <summary>Searches the range '[first, last)' for the first sequence of 'count' identical elements equal to the given 'value'</summary>
+        public static fcn search_n[Iter : ForwardIterator, Size, T](Iter first, Iter last, Size count, T value) -> Iter;
+		/// <summary>Searches the range '[first, last)' for the first sequence of 'count' identical elements equal to the given 'value'</summary>
+        public static fcn search_n[Iter : ForwardIterator, Size, T](Iter first, Iter last, Size count, T value, predicate) -> Iter;
+		
+		
+		// Sorting operations
+		
+		/// <summary>Sorts the elements in the range '[first, last)' in ascending order</summary>
+		public static fcn sort[Iter : RandomAccessIterator](Iter first, Iter last);
+		/// <summary>Sorts the elements in the range '[first, last)' in ascending order using the comparison object</summary>
+		public static fcn sort[Iter : RandomAccessIterator](Iter first, Iter last, compare);
+		
+		/// <summary>Sorts some of the elements in the range '[first, last)' in ascending order. The first 'middle - first' of these elements are placed in the range '[first, middle)',
+		/// and the order of equal elements is preserved. The order of the remaining elements in the range '[middle, last)' is unspecified.</summary>
+		public static fcn partial_sort[Iter : RandomAccessIterator](Iter first, Iter middle, Iter last);
+		/// <summary>Sorts some of the elements in the range '[first, last)' in ascending order using the comparator object. The first 'middle - first' of these elements are placed in
+		/// the range '[first, middle)', and the order of equal elements is preserved. The order of the remaining elements in the range '[middle, last)' is unspecified.</summary>
+		public static fcn partial_sort[Iter : RandomAccessIterator](Iter first, Iter middle, Iter last, compare);
+
+		/// <summary>Sorts some of the elements in the range '[first, last)' in ascending order. At most 'd_first - d_last' of the elements are moved to the range '[d_first, d_first + n)'
+		/// and then sorted. 'n' is the number of elements to sort ('n = min(last - first, d_last - d_first)'). The order of equal elements is guaranteed to be preserved.</summary>
+		public static fcn partial_sort_copy[Iter : InputIterator, RAIter : RandomAccessIterator](Iter first, Iter last, RAIter d_first, RAIter d_last);
+		/// <summary>Sorts some of the elements in the range '[first, last)' in ascending order using the comparator object. At most 'd_first - d_last' of the elements are moved to the
+		/// range '[d_first, d_first + n)' and then sorted. 'n' is the number of elements to sort ('n = min(last - first, d_last - d_first)'). The order of equal elements is guaranteed
+		/// to be preserved.</summary>
+		public static fcn partial_sort_copy[Iter : InputIterator, RAIter : RandomAccessIterator](Iter first, Iter last, RAIter d_first, RAIter d_last, compare);
+		
+		/// <summary>Sorts the elements in the range '[first, last)' in ascending order, and the order of equal elements is guaranteed to be preserved</summary>
+		public static fcn stable_sort[RAIter : RandomAccessIterator](RAIter first, RAIter last);
+		/// <summary>Sorts the elements in the range '[first, last)' in ascending order using the comparator object, and the order of equal elements is guaranteed to be preserved</summary>
+		public static fcn stable_sort[RAIter : RandomAccessIterator](RAIter first, RAIter last, compare);
+		
+		/// <summary>Partially sorts the range '[first, last)' in ascending order so that all elements in the range '[first, nth)' are less than those in the range '[nth, last)'.
+		/// The element placed in the ''n'th position is exactly the element that would occur in this position if the range was fully sorted.</summary.
+		public static fcn nth_element[RAIter : RandomAccessIterator](RAIter first, RAIter nth, RAIter last);
+		/// <summary>Partially sorts the range '[first, last)' in ascending order using the comparator object so that all elements in the range '[first, nth)' are less than those in the
+		/// range '[nth, last)'. The element placed in the ''n'th position is exactly the element that would occur in this position if the range was fully sorted.</summary>
+		public static fcn nth_element[RAIter : RandomAccessIterator](RAIter first, RAIter nth, RAIter last, compare);
+	}
+}
+
+

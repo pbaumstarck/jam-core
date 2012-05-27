@@ -1,0 +1,197 @@
+
+using System;
+
+fcn cos(double value) -> double {
+	$if (Cs || Native) {
+		return Math.Cos(value);
+	} $elseif (C || Cpp) ${
+		return cos(value);
+	}$
+	return 0.0;
+}
+fcn sin(double value) -> double {
+	$if (Cs || Native) {
+		return Math.Sin(value);
+	} $elseif (C || Cpp) ${
+		return sin(value);
+	}$
+	return 0.0;
+}
+
+fcn MakeDC(int N) -> primitive double[] {
+    var vals = Jam.Malloc[double](N);
+	for i in 0 : N - 1 {
+		vals(i) = 1.0;
+	}
+    return vals;
+}
+fcn MakeRect(int N) -> primitive double[] {
+    var vals = Jam.Malloc[double](N);
+    var width = N >> 4;
+    var mid = N >> 1;
+    for i in mid - width : mid + width {
+        vals(i) = 1.0;
+    }
+    return vals;
+}
+
+fcn DFT(primitive double[] values) -> primitive Complex[double][] {
+	var N = values.Length;
+	var Ninv = 1.0 / double(N);
+	var result = Jam.Malloc[Complex[double]](N);
+	for k in 0 : N - 1 {
+		for n in 0 : N - 1 {
+			result(k) += Complex[double](values(n) * cos(2.0 * Jam.PI * Ninv * (double)(k * n)), values(n) * -sin(2.0 * Jam.PI * Ninv * (double)(k * n)));
+		}
+	}
+	return result;
+}
+
+struct FFT {	
+	// The values
+	private primitive double[] values;
+	// The result array
+	private primitive Complex[double][] result;
+	// A lazily allocated temporary array
+	private primitive Complex[double][] temporary;
+	// The computation complexity we have incurred
+	private int load;
+	
+	
+	// Constructor
+	private fcn new(primitive double[] values, primitive Complex[double][] &result1) {
+		this.values = values;
+		var N = values.Length;
+		// Must allocate a result
+		result = Jam.Malloc[Complex[double]](N);
+		> "  Factorization:";
+		SubFFT(N, 0, 1);
+		>> "; Load: ", load, " / ", N * N, " --> ", (int)((double)(load * 100.0) / (double)(N * N)), "%";
+		result1 = result;
+	}
+	
+	// Swap the result and temporary fields
+	private fcn Swap() {
+		var temp = result;
+		result = temporary;
+		temporary = temp;
+	}
+	// Do an FFT over a subset of indices in an array
+	private fcn SubFFT(int N, int offset, int spacing) {
+		int factor;
+		if (N % 2 == 0) {
+			factor = 2;
+		} else if (N % 3 == 0) {
+			factor = 3;
+		} else if (N % 5 == 0) {
+			factor = 5;
+		} else {
+			factor = -1;
+		}
+		if (N <= 32 || factor == -1) {
+			// It's too small, or it's not easily sub-divideable
+			> " ", N;
+			SubDFT(N, offset, spacing);
+		} else {
+			> " ", factor;
+			if (temporary == null) {
+				// Must allocate a temporary array for us
+				temporary = Jam.Malloc[Complex[double]](N);
+			}
+			// Compute the sub FFTs
+			var subN = N / factor;
+			var subSpacing = spacing * factor;
+			Swap();
+			for i in 0 : factor - 1 {
+				SubFFT(/*values, result, temporary,*/ subN, offset + i * spacing, subSpacing);
+			}
+			Swap();
+			// Combine the results
+			var coeff = 2.0  * Jam.PI / (double)(N);
+			var superK = 0;
+			var counter = 0;
+			var subK = 0;
+			for k in 0 : N - 1 {
+				result(spacing * k + offset) = temporary(offset + subK * subSpacing);
+				if (++counter == subN) {
+					counter = subK = 0;
+				} else {
+					++subK;
+				}
+			}
+			for i in 1 : factor - 1 {
+				counter = subK = 0;
+				for k in 0 : N - 1 {
+					result(spacing * k + offset) += Complex[double](cos(coeff * (double)(k * i)), -sin(coeff * (double)(k * i)))
+						* temporary(offset + i * spacing + subK * subSpacing);
+					if (++counter == subN) {
+						counter = subK = 0;
+					} else {
+						++subK;
+					}
+				}
+			}
+			load += N * factor;
+		}
+	}
+	// Do a DFT over a subset of indices in an array
+	private fcn SubDFT(int N, int offset, int spacing) {
+		load += N * N;
+		var coeff = 2.0  * Jam.PI / (double)(N);
+		for k in 0 : N - 1 {
+			var temp = Complex[double](0.0, 0.0);
+			for n in 0 : N - 1 {
+				var value = values(spacing * n + offset);
+				temp += Complex[double](value * cos(coeff * (double)(k * n)), value * -sin(coeff * (double)(k * n)));
+			}
+			result(spacing * k + offset) = temp;
+		}
+	}
+	
+	// Compute an FFT of the given values
+	public static fcn Compute(primitive double[] values) -> primitive Complex[double][] {
+		primitive Complex[double][] result = null;
+		//new(values, result);
+		var fft = FFT(values, result);
+		/*if (result == null) {
+			>> "Jigga null?";
+		}
+		return result;*/
+		return fft.result;
+	}
+}
+
+fcn PrintArray[T](primitive T[] arr) {
+	for i in 0 : arr.Length - 1 {
+		>> i, ": ", arr(i).ToString();
+	}
+}
+fcn SumDiff(primitive Complex[double][] arr1, primitive Complex[double][] arr2) -> double {
+	double ret = 0.0;
+	for i in 0 : arr1.Length - 1 {
+		ret += (arr1(i) - arr2(i)).Mag();
+	}
+	return ret;
+}
+
+
+for i in 32 : 128 {
+	// Get a new arary
+	>> "N: ", i;
+	var values = MakeRect(i);
+	//var values = MakeDC(64);
+	//>> "Values:";
+	//PrintArray(values);
+	var dft = DFT(values);
+	//>> "DFT:";
+	//PrintArray(result);
+	var fft = FFT.Compute(values);
+	//>> "FFT:";
+	//PrintArray(result2);
+	>> "  Difference: ", SumDiff(dft, fft);
+	Jam.Free(values);
+	Jam.Free(dft);
+	Jam.Free(fft);
+}
+
+

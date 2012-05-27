@@ -1,0 +1,113 @@
+
+// Include this line in your '.jam' files in which you wish to use the 'multiset' class
+//$if (Cpp.Header || Cpp.Source) ${ #include <set> }$
+
+$if (Cpp) {
+	#[extern]
+	namespace std
+	{
+		/// <summary>Extern version of the STL 'multiset&lt;T&gt;' class. Multiset is an associative container that contains a sorted set of objects of type 'Key'. Sorting is done
+		/// using the key comparison function Compare. Search, insertion, and removal operations have logarithmic complexity.</summary>
+		public class multiset[T]
+		{
+			// Constructors
+			/// <summary>The default constructor that builds an empty set</summary>
+			fcn new();
+            /// <summary>Adds the elements in the range '[first, last)' to the set</summary>
+			fcn new(InputIterator first, InputIterator last);
+			/// <summary>Copy constructor from another set</summary>
+			fcn new(multiset[T] &other);
+			
+						
+			/// <summary>Returns an iterator to the start of the container</summary>
+			fcn begin() -> iterator;
+			/// <summary>Returns an iterator to the end of the container</summary>
+			fcn @end() -> iterator;
+			/// <summary>Returns a reverse iterator to the end of the container</summary>
+			fcn rbegin() -> reverse_iterator;
+			/// <summary>Returns a reverse iterator to the start of the container</summary>
+			fcn rend() -> reverse_iterator;
+			
+			/// <summary>Checks if the container has no elements</summary>
+			fcn empty() -> bool;
+			/// <summary>Returns the number of elements in the container</summary>
+			fcn size() -> int;
+			/// <summary>Returns the maximum number of elements the container is able to hold due to system or library implementation limitations</summary>
+			fcn max_size() -> int;
+			
+			/// <summary>Removes all elements from the container without releasing the allocated memory</summary>
+			fcn clear();
+			
+			/// <summary>Inserts a value into the container</summary>
+			/// <returns>A pair of a bool denoting whether the insertion took place and an iterator to the inserted element</returns>
+			fcn insert(T value) -> pair[iterator, bool];
+			/// <summary>Inserts a value into the container using 'hint' as a suggestion of where it should go</summary>
+			/// <returns>An iterator to the inserted element or to the one that prevented insertion</returns>
+			fcn insert(iterator hint, T value) -> iterator;
+			/// <summary>Adds the elements in the range '[first, last)' to the set</summary>
+			fcn insert(InputIterator first, InputIterator last);
+			
+			/// <summary>Removes the element at position 'pos'</summary>
+			fcn erase(iterator pos) -> iterator;
+			/// <summary>Removes all elements of this value and returns the number of such elements erased</summary>
+			fcn erase(T value) -> int;
+			/// <summary>Removes the elements in the range '[first, last)'</summary>
+			fcn erase(iterator first, iterator last);
+			
+			/// <summary>Exchanges the contents of the container with those of 'other'</summary>
+			fcn swap(multiset[T] &other);
+			
+            /// <summary>Returns the number of elements with key 'value'</summary>
+            fcn count(T value) -> int;
+            /// <summary>Finds an element with key 'value'</summary>
+            /// <returns>Iterator to an element with the given key, or 'end()' if one was not found</returns>
+            fcn find(T value) -> iterator;
+
+            /// <summary>Returns a range containing all elements with key 'value'</summary>
+            /// <returns>Two iterators, one pointing to the first element that is not less than the key, and another pointing to the first element greater than the key</returns>
+            fcn equal_range(T value) -> pair[iterator, iterator];
+            /// <summary>Returns an iterator pointing to the first element that is not less than the key 'value'</summary>
+            fcn lower_bound(T value) -> iterator;
+            /// <summary>Returns an iterator pointing to the first element that is greater than the key 'value'</summary>
+            fcn upper_bound(T value) -> iterator;
+
+
+			/// <summary>The iterator type for the container</summary>
+			struct iterator : BidirectionalIterator
+			{
+				/// <summary>Comparison function between two iterators</summary>
+				static fcn ==(iterator one, iterator two) -> bool;
+				/// <summary>Comparison function between two iterators</summary>
+				static fcn !=(iterator one, iterator two) -> bool;
+
+				/// <summary>Increments the iterator</summary>
+				static fcn ++(iterator value) -> iterator;
+				/// <summary>Decrements the iterator</summary>
+				static fcn --(iterator value) -> iterator;
+
+                /// <summary>Effects a de-reference of the iterator ('iter.DeRef()' translates as '*iter'), yielding the current value</summary>
+                #[dereference_operator]
+                fcn DeRef() -> T;
+			}
+			/// <summary>The reverse iterator type for the container</summary>
+			struct reverse_iterator : BidirectionalIterator
+			{
+				/// <summary>Comparison function between two iterators</summary>
+				static fcn ==(reverse_iterator one, reverse_iterator two) -> bool;
+				/// <summary>Comparison function between two iterators</summary>
+				static fcn !=(reverse_iterator one, reverse_iterator two) -> bool;
+
+				/// <summary>Increments the iterator</summary>
+				static fcn ++(reverse_iterator value) -> reverse_iterator;
+				/// <summary>Decrements the iterator</summary>
+				static fcn --(reverse_iterator value) -> reverse_iterator;
+
+                /// <summary>Effects a de-reference of the iterator ('iter.DeRef()' translates as '*iter'), yielding the current value</summary>
+                #[dereference_operator]
+                fcn DeRef() -> T;
+			}
+		}
+	}
+}
+
+

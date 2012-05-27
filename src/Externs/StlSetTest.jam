@@ -1,0 +1,35 @@
+
+$if (Cpp.Header || Cpp.Source) ${ #include <set> }$
+
+using std;
+
+fcn Print[T](@set[T] seto) {
+    >> "Set:";
+    for (var iter = seto.begin(); iter != seto.@end(); ++iter) {
+        >> "  ", #iter, ": ", iter.DeRef();
+    }
+}
+
+var seto = @set[int]();
+
+seto.insert(44);
+seto.insert(97);
+seto.insert(-99);
+Print(seto);
+
+seto.insert(44);
+Print(seto);
+
+>> "Count: ", seto.count(44);
+
+for i in 0 : 10 {
+    seto.insert(i);
+}
+var pair = seto.insert(7);
+>> "Bool: ", pair.second;
+for (int i = 0; i < 4; ++i) {
+    >> " ", pair.first.DeRef();
+    ++pair.first;
+}
+
+

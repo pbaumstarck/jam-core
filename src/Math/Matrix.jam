@@ -1,0 +1,734 @@
+
+using Rbrx.Structures;
+
+namespace Rbrx.Math
+{
+	/// <summary>A 2-D matrix that is dynamically resizeable on out-of-range 'set's</summary>
+	public class Matrix[T = double] : T[,]
+	{
+		/// <summary>The number of dimensions of the matrix</summary>
+		public const int Ndims = 2;
+		/// <summary>The values of the matrix</summary>
+		private primitive T[] values;
+		
+		/// <summary>The number of allocated rows</summary>
+		private int allocRows;
+		/// <summary>The number of allocated columns</summary>
+		private int allocCols;
+		
+		/// <summary>The number of rows in the matrix</summary>
+		inline public int Nrows { get; private set; }
+		/// <summary>The number of columns in the matrix</summary>
+		inline public int Ncols { get; private set; }
+		/// <summary>Whether this matrix is square</summary>
+		public bool IsSquare { get { return Nrows == Ncols && Nrows > 0; } }
+		
+		
+		// Constructors
+		/// <summary>Builds a 'nRows'-by-'nCols' matrix, and fills it in with the specifies 'values' in row-major (row-contiguous) order</summary>
+		fcn new(int nRows, int nCols, T values*)
+		{
+			if (nRows < 0 || nCols < 0) {
+				throw Core.Exception("Matrix sizes cannot be negative");
+			}
+			// Allocate the values and set our sizes
+			this.values = Jam.Malloc[T](nRows * nCols);
+			allocRows = Nrows = nRows;
+			allocCols = Ncols = nCols;
+			// Write the 'values' into the matrix in row-major (row-contiguous) order
+			int r = 0, c = 0;
+			bool overrun = false;
+			for value in values {
+				if (overrun) {
+					throw Core.Exception();
+				}
+				this.values(allocCols * r + c) = value;
+				if (++c == Ncols) {
+					c = 0;
+					overrun = ++r >= Nrows;
+				}
+			}
+		}
+		
+		
+		/// <summary>The general 'Size' function</summary>
+		public fcn Size(int dim) -> int
+		{
+			throw Core.Exception("Invalid argument") if dim < 0;
+			switch (dim) {
+				case 0 => return Nrows * Ncols;
+				case 1 => return Nrows;
+				case 2 => return Ncols;
+				default => return 1;
+			}
+		}
+		
+		/// <summary>Copy this matrix into a new one that is a tight allocation (no extraneous values)</summary>
+		public fcn Copy() -> Matrix[T]
+		{
+			var ret = Matrix[T](Nrows, Ncols);
+			// Copy over each row
+			for r in 0 : Nrows - 1 {
+				Jam.Memcpy(ret.values, this.values, Ncols, r * ret.allocCols, r * this.allocCols);
+			}
+			return ret;
+		}
+		/// <summary>Copy this matrix into a new one with a possibly different type. The new allocation is tight with no extraneous values.</summary>
+		public fcn Copy[U]() -> Matrix[U]
+		{
+			var ret = Matrix[U](Nrows, Ncols);
+			// Copy over each element
+			for r in 0 : Nrows - 1 {
+				for c in 0 : Ncols - 1 {
+					ret(r, c) = this(r, c);
+				}
+			}
+			return ret;
+		}		
+		
+		/// <summary>Get a column of the matrix as a vector</summary>
+		public fcn GetColumn(int column) -> Vector[T]
+		{
+			var ret = Vector[T](this.Nrows);
+			for r in 0 : Nrows - 1 {
+				ret(r) = this.values(r * allocCols + column);
+			}
+			return ret;
+		}
+		/// <summary>Get a row of the matrix as a vector</summary>
+		public fcn GetRow(int row) -> Vector[T]
+		{
+			var ret = Vector[T](this.Ncols);
+			for c in 0 : Ncols - 1 {
+				ret(c) = this.values(row * allocCols + c);
+			}
+			return ret;
+		}
+		
+		
+		/// <summary>The 2-D indexer in the native type</summary>
+		public T this(int i, int j)
+		{
+			get
+			{
+				throw Core.IndexOutOfRangeException() if i < 0 || j < 0 || i >= Nrows || j >= Ncols;
+				return values(i * allocCols + j);
+			}
+			set
+			{
+				throw Core.IndexOutOfRangeException() if i < 0 || j < 0;
+				if (i >= Nrows || j >= Ncols) {
+					EnsureSize(i + 1, j + 1);
+				}
+				values(i * allocCols + j) = value;
+			}
+		}
+		/*/// <summary>The vectorized indexer in 'object' for the 'KArray' static interface</summary>
+		public object this(int[] ixes) {
+			get
+			{
+				throw Core.IndexOutOfRangeException() if ixes == null || ixes.Size(0) != 2;
+				return this(ixes(0), ixes(1));
+			}
+			set
+			{
+				throw Core.IndexOutOfRangeException() if ixes == null || ixes.Size(0) != 2;
+				this(ixes(0), ixes(1)) = value as T;
+			}
+		}*/
+		
+		/// <summary>Ensure that the matrix is allocated up to these sizes</summary>
+		private fcn EnsureSize(int nRows, int nCols)
+		{
+			// Check the rows first
+			var allocateRows = false;
+			if (nRows > Nrows) {
+				if (nRows < allocRows) {
+					// We already have enough space allocated, so that was easy
+					Nrows = nRows;
+				} else {
+					allocateRows = true;
+				}
+			}
+			var allocateCols = false;
+			if (nCols > Ncols) {
+				if (nCols < allocCols) {
+					// We already have enough space allocated, so that was easy
+					Ncols = nCols;
+				} else {
+					allocateCols = true;
+				}
+			}
+			if (!allocateRows && !allocateCols) {
+				// Nothing more to be done
+				return;
+			}
+			throw Core.Exception("This is not implemented");
+		}
+		
+		
+		/// <summary>Adds the two matrices together by applying the '+' operator to their elements, and also merges their element type</summary>
+		public static fcn +[U](Matrix[T] mat1, Matrix[U] mat2) -> Matrix[T * U]
+		{
+			throw Core.NullReferenceException() if mat1 == null || mat2 == null;
+			throw ArraySizeMismatchException("Mismatched matrix sizes for '+' operator: " + mat1.Size(1) + "-by-" + mat1.Size(2) + " vs " + mat2.Size(1) + "-by-" + mat2.Size(2))
+				if mat1.Size(1) != mat2.Size(1) || mat1.Size(2) != mat2.Size(2);
+			var ret = Matrix[T * U](mat1.Size(1), mat1.Size(2));
+			for i in 0 : mat1.Size(1) - 1 {
+				for j in 0 : mat1.Size(2) - 1 {
+					ret(i, j) = mat1(i, j) + mat2(i, j);
+				}
+			}
+			return ret;
+		}
+		/// <summary>Adds the singleton to the matrix by applying the '+' operator, and also merges the element type with it</summary>
+		#[commutative]
+		public static fcn +[U : Jam.KSingleton](Matrix[T] mat, U value) -> Matrix[T * U]
+		{
+			throw Core.NullReferenceException() if mat == null;
+			var ret = Matrix[T * U](mat.Size(1), mat.Size(2));
+			for i in 0 : mat.Size(1) - 1 {
+				for j in 0 : mat.Size(2) - 1 {
+					ret(i, j) = mat(i, j) + value;
+				}
+			}
+			return ret;
+		}
+		
+		/// <summary>A compound-plus operator with a singleton</summary>
+		public fcn +=[U : Jam.KSingleton](U value) -> Matrix[T]
+		{
+			for r in 0 : Nrows - 1 {
+				for c in 0 : Ncols - 1 {
+					this.values(r * allocCols + c) += value;
+				}
+			}
+			return this;
+		}
+		/// <summary>A compound-plus operator with another matrix</summary>
+		public fcn +=[U](Matrix[U] mat) -> Matrix[T]
+		{
+			throw Core.NullReferenceException() if mat == null;
+			throw ArraySizeMismatchException("Mismatched matrix sizes for '+=' operator: " + Size(1) + "-by-" + Size(2) + " vs " + mat.Size(1) + "-by-" + mat.Size(2))
+				if Size(1) != mat.Size(1) || Size(2) != mat.Size(2);
+			for r in 0 : Nrows - 1 {
+				for c in 0 : Ncols - 1 {
+					this.values(r * allocCols + c) -= mat(r, c);
+				}
+			}
+			return this;
+		}
+		
+		
+		/// <summary>Takes the difference of the two matrices by applying the '-' operator, and also merges their element types</summary>
+		public static fcn -[U](Matrix[T] mat1, Matrix[U] mat2) -> Matrix[T * U]
+		{
+			throw Core.NullReferenceException() if mat1 == null || mat2 == null;
+			throw ArraySizeMismatchException("Mismatched matrix sizes for '-' operator: " + mat1.Size(1) + "-by-" + mat1.Size(2) + " vs " + mat2.Size(1) + "-by-" + mat2.Size(2))
+				if mat1.Size(1) != mat2.Size(1) || mat1.Size(2) != mat2.Size(2);
+			var ret = Matrix[T * U](mat1.Size(1), mat1.Size(2));
+			for i in 0 : mat1.Size(1) - 1 {
+				for j in 0 : mat1.Size(2) - 1 {
+					ret(i, j) = mat1(i, j) - mat2(i, j);
+				}
+			}
+			return ret;
+		}
+		/// <summary>Subtracts the singleton from the matrix by applying the '-' operator, and also merges the element type with it</summary>
+		public static fcn -[U : Jam.KSingleton](Matrix[T] mat, U value) -> Matrix[T * U]
+		{
+			throw Core.NullReferenceException() if mat == null;
+			var ret = Matrix[T * U](mat.Size(1), mat.Size(2));
+			for i in 0 : mat.Size(1) - 1 {
+				for j in 0 : mat.Size(2) - 1 {
+					ret(i, j) = mat(i, j) - value;
+				}
+			}
+			return ret;
+		}
+		/// <summary>Subtracts the matrix from the singleton by applying the '-' operator, and also merges the element type with it</summary>
+		public static fcn -[U : Jam.KSingleton](U value, Matrix[T] mat) -> Matrix[T * U]
+		{
+			throw Core.NullReferenceException() if mat == null;
+			var ret = Matrix[T * U](mat.Size(1), mat.Size(2));
+			for i in 0 : mat.Size(1) - 1 {
+				for j in 0 : mat.Size(2) - 1 {
+					ret(i, j) = mat(i, j) - value;
+				}
+			}
+			return ret;
+		}
+		
+		/// <summary>A compound-minus operator with a singleton</summary>
+		public fcn -=[U : Jam.KSingleton](U value) -> Matrix[T]
+		{
+			for r in 0 : Nrows - 1 {
+				for c in 0 : Ncols - 1 {
+					this.values(r * allocCols + c) -= value;
+				}
+			}
+			return this;
+		}
+		/// <summary>A compound-minus operator with another matrix</summary>
+		public fcn -=[U](Matrix[U] mat) -> Matrix[T]
+		{
+			throw Core.NullReferenceException() if mat == null;
+			throw ArraySizeMismatchException("Mismatched matrix sizes for '-=' operator: " + Size(1) + "-by-" + Size(2) + " vs " + mat.Size(1) + "-by-" + mat.Size(2))
+				if Size(1) != mat.Size(1) || Size(2) != mat.Size(2);
+			for r in 0 : Nrows - 1 {
+				for c in 0 : Ncols - 1 {
+					this.values(r * allocCols + c) -= mat(r, c);
+				}
+			}
+			return this;
+		}
+		
+		
+		/// <summary>Multiplies the two matrices together by applying the '*' operator to the necessary elements, and also merges their element types</summary>
+		public static fcn *[U](Matrix[T] mat1, Matrix[U] mat2) -> Matrix[T * U]
+		{
+			throw Core.NullReferenceException() if mat1 == null || mat2 == null;
+			throw ArraySizeMismatchException("Mismatched matrix sizes for '*' operator: " + mat1.Size(1) + "-by-" + mat1.Size(2) + " vs " + mat2.Size(1) + "-by-" + mat2.Size(2))
+				if mat1.Size(2) != mat2.Size(1);
+			readonly int innerSize = mat1.Size(2);
+			var ret = Matrix[T * U](mat1.Size(1), mat2.Size(2));
+			for i in 0 : ret.Size(1) - 1 {
+				for j in 0 : ret.Size(2) - 1 {
+					auto value = 0;
+					for k in 0 : innerSize - 1 {
+						value += mat1(i, k) * mat2(k, j);
+					}
+					ret(i, j) = value;
+				}
+			}
+			return ret;
+		}
+		/// <summary>Multiplies the matrix by the singleton by applying the '*' operator, and also merges its types with the matrix's element type</summary>
+		#[commutative]
+		public static fcn *[U : Jam.KSingleton](Matrix[T] mat1, U value) -> Matrix[T * U]
+		{
+			var ret = Matrix[T * U](mat1.Size(1), mat1.Size(2));
+			for i in 0 : mat1.Size(1) - 1 {
+				for j in 0 : mat1.Size(2) - 1 {
+					ret(i, j) = mat1(i, j) * value;
+				}
+			}
+			return ret;
+		}
+		/// <summary>Element-wise multiplies the two matrices together by applying the '*' operator to the necessary elements, and also merges their element types</summary>
+		public static fcn .*[U](Matrix[T] mat1, Matrix[U] mat2) -> Matrix[T * U]
+		{
+			throw Core.NullReferenceException() if mat1 == null || mat2 == null;
+			throw ArraySizeMismatchException("Mismatched matrix sizes for '.*' operator: " + mat1.Size(1) + "-by-" + mat1.Size(2) + " vs " + mat2.Size(1) + "-by-" + mat2.Size(2))
+				if mat1.Size(1) != mat2.Size(1) || mat1.Size(2) != mat2.Size(2);
+			var ret = Matrix[T * U](mat1.Size(1), mat1.Size(2));
+			for i in 0 : ret.Size(1) - 1 {
+				for j in 0 : ret.Size(2) - 1 {
+					ret(i, j) = mat1(i, j) * mat2(i, j);
+				}
+			}
+			return ret;
+		}
+		
+		/// <summary>A compound-times operator with a singleton</summary>
+		public fcn *=[U : Jam.KSingleton](U value) -> Matrix[T]
+		{
+			for r in 0 : Nrows - 1 {
+				for c in 0 : Ncols - 1 {
+					this.values(r * allocCols + c) *= value;
+				}
+			}
+			return this;
+		}
+		
+		
+		/// <summary>Divides the matrix by the singleton by applying the '/' operator, and also merges its types with the matrix's element type</summary>
+		public static fcn /[U : Jam.KSingleton](Matrix[T] mat1, U value) -> Matrix[T * U]
+		{
+			var ret = Matrix[T * U](mat1.Size(1), mat1.Size(2));
+			for i in 0 : mat1.Size(1) - 1 {
+				for j in 0 : mat1.Size(2) - 1 {
+					ret(i, j) = mat1(i, j) / value;
+				}
+			}
+			return ret;
+		}
+		/// <summary>Element-wise divides the one matrix by the other by applying the '/' operator, and also merges their element types</summary>
+		public static fcn ./[U](Matrix[T] mat1, Matrix[U] mat2) -> Matrix[T * U]
+		{
+			throw Core.NullReferenceException() if mat1 == null || mat2 == null;
+			throw ArraySizeMismatchException("Mismatched matrix sizes for './' operator: " + mat1.Size(1) + "-by-" + mat1.Size(2) + " vs " + mat2.Size(1) + "-by-" + mat2.Size(2))
+				if mat1.Size(1) != mat2.Size(1) || mat1.Size(2) != mat2.Size(2);
+			var ret = Matrix[T * U](mat1.Size(1), mat1.Size(2));
+			for i in 0 : ret.Size(1) - 1 {
+				for j in 0 : ret.Size(2) - 1 {
+					ret(i, j) = mat1(i, j) / mat2(i, j);
+				}
+			}
+			return ret;
+		}
+		
+		/// <summary>Compound-divides the matrix by the singleton</summary>
+		public fcn /=[U : Jam.KSingleton](U value) -> Matrix[T]
+		{
+			for i in 0 : Nrows - 1 {
+				for j in 0 : Ncols - 1 {
+					this.values(i * allocCols + j) /= value;
+				}
+			}
+			return this;
+		}
+		
+		
+		/// <summary>Transposes the matrix</summary>
+		public static fcn \' /* ' */(Matrix[T] mat) -> Matrix[T]
+		{
+			var ret = Matrix[T](mat.Size(2), mat.Size(1));
+			for i in 0 : mat.Size(1) - 1 {
+				for j in 0 : mat.Size(2) - 1 {
+					ret(j, i) = mat(i, j);
+				}
+			}
+			return ret;
+		}
+		
+		
+		/// <summary>Computes the QR decomposition of the matrix using the modified Gram-Schmidt process</summary>
+		public fcn QR() -> (Matrix[T * single] Q, Matrix[T * single] R)
+		{
+			// We use 'Q' to store our working 'u' vectors, and we initialize it by copying since all the 'u's have to be boostrapped with our entries anyway
+			Q = Copy[T * single]();
+			readonly int maxColIx = this.Ncols - 1, maxRowIx = this.Nrows - 1;
+			// Fill up Q with the un-normalized 'u' vectors first
+			for k in 0 : maxColIx {
+				for i in 0 : k - 1 {
+					// Subtract from our working 'u_k' ('Q(:,k)') the projection of it onto the last orthogonalized vector 'u_i' ('Q(:,i)')
+					var numerator = 0 as (T * single);
+					var denominator = 0 as (T * single);
+					for j in 0 : maxRowIx {
+						numerator += (qTemp = Q(j, i)) * Q(j, k);
+						denominator += qTemp * qTemp;
+					}
+					var coeff = numerator / denominator;
+					for j in 0 : maxRowIx {
+						Q(j, k) = Q(j, k) - coeff * Q(j, i);
+					}
+				}
+			}
+			// Normalize the 'u' vectors to legitimize 'Q'
+			for k in 0 : maxColIx {
+				var norm = 0 as (T * single);
+				for j in 0 : maxRowIx {
+					temp = Q(j, k);
+					norm += temp * temp;
+				}
+				var invNorm = (1 / Sqrt(norm)) as (T * single);
+				for j in 0 : maxRowIx {
+					Q(j, k) *= invNorm;
+				}
+			}
+			// Fill in the 'R' matrix with the proper inner products
+			R = Matrix[T * single](this.Ncols, this.Ncols);
+			for i in 0 : maxRowIx {
+				for j in i : maxColIx {
+					var value = 0 as (T * single);
+					for k in 0 : maxRowIx {
+						value += Q(k, i) * this(k, j);
+					}
+					R(i, j) = value;
+				}
+			}
+		}
+		
+		/// <summary>Computes the Frobenius norm of the matrix</summary>
+		public T FrobeniusNorm
+		{
+			get
+			{
+				var sum = 0 as T;
+				for r in 0 : Nrows - 1 {
+					for c in 0 : Ncols - 1 {
+						sum += (value = this.values(r * allocCols + c)) * value;
+					}
+				}
+				return Sqrt(sum) as T;
+			}
+		}
+		
+		/// <summary>Calculates the LU decomposition of the matrix</summary>
+		public fcn LU(double minPivotThresh = 0.001) -> (Matrix[T] L, Matrix[T] U)
+		{
+			// Start 'L' off as an identity matrix, and 'U' as a copy of this
+			L = Eye[T](Nrows);
+			U = Copy();
+			readonly int maxRowIx = Nrows - 1, maxColIx = Ncols - 1;
+			for r in 0 : maxRowIx {
+				for r1 in r + 1 : maxRowIx {
+					// Find the pivoting row
+					
+					var coeff = - U(r1, r) / U(r, r);
+					for c in 0 : maxColIx {
+						U(r1, c) += coeff * U(r, c);
+					}
+					L(r1, r) = -coeff;
+				}
+			}
+		}
+		
+		/// <summary>Calculates the determinant of the matrix</summary>
+		public T Determinant
+		{
+			get
+			{
+				throw ArrayInvalidSizeException("Matrix must be square but is " + Nrows + "-by-" + Ncols) if !IsSquare;
+				switch (Nrows) {
+					case 1 =>
+						return this.values(0);
+					case 2 =>
+						return this(0, 0) * this(1, 1) - this(0, 1) * this(1, 0);
+					case 3 =>
+						return this(0, 0) * this(1, 1) * this(2, 2)
+							 + this(0, 1) * this(1, 2) * this(2, 0)
+							 + this(0, 2) * this(1, 0) * this(2, 1)
+							 - this(0, 2) * this(1, 1) * this(2, 0)
+							 - this(0, 1) * this(1, 0) * this(2, 2)
+							 - this(0, 0) * this(1, 2) * this(2, 1);
+					/*case 4 =>
+						var ret = 0 as T;
+						if (this(0, 0) != 0) {
+							ret += this(0, 0) *
+								  (this(1, 1) * this(2, 2) * this(3, 3)
+								 + this(0, 1) * this(1, 2) * this(2, 0)
+								 + this(0, 2) * this(1, 0) * this(2, 1)
+								 - this(0, 2) * this(1, 1) * this(2, 0)
+								 - this(0, 1) * this(1, 0) * this(2, 2)
+								 - this(0, 0) * this(1, 2) * this(2, 1));
+						}*/
+					default =>
+						// Take the LU decomposition and return the product of the diagonal
+						(L,U) = LU();
+						var ret = 0 as T;
+						for i in 0 : U.Nrows - 1 {
+							ret *= (temp = U(i, i)) * temp;
+						}
+						// We don't need the matrices anymore
+						Jam.Free(L);
+						Jam.Free(U);
+						return ret;
+				}
+			}
+		}
+		
+		/// <summary>Compute the inner product of a column with the vector</summary>
+		public fcn ColumnInnerProduct[U](int column, Vector[U] vec) =>
+		{
+			if (column < 0 || column >= Ncols) {
+				throw Core.IndexOutOfRangeException();
+			}
+			if (vec.Numel != Ncols) {
+				throw ArraySizeMismatchException();
+			}
+			auto ret = 0;
+			for r in 0 : Nrows - 1 {
+				ret += this.values(allocCols * r + column) * vec(column);
+			}
+			return ret;
+		}
+		
+		
+		/// <summary>Computes the inverse of the matrix using Gauss-Jordan elimination</summary>
+		/// <citation>William H. Press , Saul A. Teukolsky , William T. Vetterling , Brian P. Flannery, "Numerical Recipes in C: The Art of Scientific Computing,"
+		/// Cambridge University Press, New York, NY, 1992, Section 2.1 "Gauss-Jordan elimination".</citation>
+		public fcn Inv() -> Matrix[T]
+		{
+			throw Core.Exception("Matrix must be square") if !IsSquare;
+			return GaussJordan[T, Matrix[T]](this);
+			/*readonly int n = Nrows;
+			// Copy the matrix into 'gauss' and then run the in-place algorithm on it
+			var gauss = Copy();
+			readonly var gaussAllocCols = gauss.allocCols;
+			int icol = -1, irow = -1;
+			// We concatenate the three 'n'-element bookkeeping integer vectors into one, addressable as '[ipiv indxc indxr]'
+			var ipiv_indxc_indxr = Jam.Malloc[int](3 * n);
+			try {
+				// This is the main loop over the columns to be reduced
+				for (int i = 0; i < n; ++i) {
+					// Search for a pivot
+					var big = 0 as T;
+					for (int j = 0; j < n; ++j) {
+						if (ipiv_indxc_indxr(j) != 1) {
+							// We haven't already used this column
+							for (int k = 0; k < n; ++k) {
+								if (ipiv_indxc_indxr(k) == 0) {
+									var temp = Abs(gauss.values(j * gaussAllocCols + k));
+									if (temp >= big) {
+										big = temp;
+										irow = j;
+										icol = k;
+									}
+								}
+							}
+						}
+					}
+					++ipiv_indxc_indxr(icol);
+					if (irow != icol) {
+						for (int _l = 0; _l < n; ++_l) {
+							var temp = gauss.values(irow * gaussAllocCols + _l);
+							gauss.values(irow * gaussAllocCols + _l) = gauss.values(icol * gaussAllocCols + _l);
+							gauss.values(icol * gaussAllocCols + _l) = temp;
+						}
+					}
+					ipiv_indxc_indxr(2 * n + i) = irow;
+					ipiv_indxc_indxr(n + i) = icol;
+					var pivTemp = gauss.values(irow * gaussAllocCols + icol);
+					throw Core.Exception("Matrix is singular to working precision") if pivTemp == 0;
+					var pivInv = (1 as T) / pivTemp;
+					gauss.values(irow * gaussAllocCols + icol) = 1 as T;
+					for (int _l = 0; _l < n; ++_l) {
+						gauss.values(icol * gaussAllocCols + _l) *= pivInv;
+					}
+					for (int _ll = 0; _ll < n; ++_ll) {
+						if (_ll != icol) {
+							var temp = gauss.values(_ll * gaussAllocCols + icol);
+							gauss.values(_ll * gaussAllocCols + icol) = 0 as T;
+							for (int _l = 0; _l < n; ++_l) {
+								gauss.values(_ll * gaussAllocCols + _l) -= gauss.values(icol * gaussAllocCols + _l) * temp;
+							}
+						}
+					}
+				}
+				for (int _l = n - 1; _l >= 0; --_l) {
+					var indxr_l = ipiv_indxc_indxr(2 * n + _l);
+					var indxc_l = ipiv_indxc_indxr(n + _l);
+					if (indxr_l != indxc_l) {
+						for (int k = 0; k < n; ++k) {
+							var temp = gauss.values(k * gaussAllocCols + indxr_l);
+							gauss.values(k * gaussAllocCols + indxr_l) = gauss.values(k * gaussAllocCols + indxc_l);
+							gauss.values(k * gaussAllocCols + indxc_l) = temp;
+						}
+					}
+				}
+			} finally {
+				if (ipiv_indxc_indxr != null) {
+					Jam.Free(ipiv_indxc_indxr);
+				}
+			}
+			return gauss;*/
+		}
+		/// <summary>Convert this matrix to reduced row echelon form</summary>
+		public fcn Rref() -> Matrix[T]
+		{
+			int r = 0, c = 0;
+			while (r < Nrows && c < Ncols) {
+				int rMax = r;
+				var maxValue = Abs(this(rMax, c));
+				for rr in r + 1 : Nrows - 1 {
+					if ((tempValue = Abs(this(rr, c))) > maxValue) {
+						maxValue = tempValue;
+						rMax = r;
+					}
+				}
+				if (maxValue != 0) {
+					// Swap rows 'r' and 'rMax'
+					SwapRows(r, rMax);
+					// Divide row 'r' by 'this(r, c)'
+					var invValue = 1 / this(r, c);
+					for cc in 0 : Ncols - 1 {
+						this(r, cc) *= invValue;
+					}
+					// Rectify all other rows
+					for rr in 0 : Nrows - 1 {
+						if (rr == r) {
+							continue;
+						}
+						var coeff = this(rr, c);
+						for cc in 0 : Ncols - 1 {
+							this(rr, cc) -= coeff * this(r, cc);
+						}
+					}
+					++r;
+				}
+				++c;
+			}
+			return this;
+		}
+		/// <summary>Swaps the given rows in this matrix, returning the modified 'this'</summary>
+		public fcn SwapRows(int row1, int row2) -> Matrix[T]
+		{
+			if (row1 < 0 || row2 < 0 || row1 >= Nrows || row2 >= Nrows) {
+				throw Core.Exception("One or more row indices out of range");
+			}
+			if (row1 != row2) {
+				// Work to do! Oh noes!
+				for c in 0 : Ncols - 1 {
+					var temp = values(ix1 = row1 * allocCols + c);
+					values(ix1) = values(ix2 = row2 * allocCols + c);
+					values(ix2) = temp;
+				}
+			}
+			return this;
+		}
+		
+		
+		/// <summary>Enumerates over the values in row-major (row-contiguous) order</summary>
+		enumerator fcn Values() -> T
+		{
+			for i in 0 : Nrows - 1 {
+				for j in 0 : Ncols - 1 {
+					return values(i * allocCols + j);
+				}
+			}
+		}
+		
+		
+		/// <summary>Our 'ToString' implementation, which prints a nice grid of all the numbers</summary>
+		override fcn ToString() -> string
+		{
+			// Do 'ToString' on all the elements to find the max size
+			readonly int numel = Size(0);
+			primitive string[] strs = Jam.Malloc[string](numel);
+			int maxSize = -1;
+			for value in Values() {
+				strs(#value) = str = value.ToString();
+				if (str.Length > maxSize) {
+					maxSize = str.Length;
+				}
+			}
+			var sb = JamStringBuilder(maxSize * numel);
+			sb.Append(Nrows.ToString());
+			sb.Append("-by-");
+			sb.Append(Ncols.ToString());
+			sb.AppendLine(":");
+			// Now print the elemnts with proper padding
+			int ix = 0;
+			for i in 0 : Nrows - 1 {
+				sb.Append('[');
+				for j in 0 : Ncols - 1 {
+					var str = strs(ix);
+					if (j > 0) {
+						// Print spacing from previous element
+						sb.Append(' ');
+					}
+					// Print padding
+					for wix in 0 : maxSize - str.Length - 1 {
+						sb.Append(' ');
+					}
+					sb.Append(str);
+					++ix;
+				}
+				sb.Append(']');
+				sb.Append('\n');
+			}
+			var ret = sb.ToString();
+			// Now free everything explicitly
+			for i in 0 : numel - 1 {
+				Jam.Free(strs(i));
+			}
+			Jam.Free(strs);
+			Jam.Free(sb);
+			return ret;
+		}
+	}
+}
+
+

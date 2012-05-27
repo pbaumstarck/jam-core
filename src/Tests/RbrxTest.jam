@@ -1,0 +1,111 @@
+
+using Core;
+using Rbrx.*;
+
+// Tests the contents of the RBRX library
+
+/// <summary>Tests general operators</summary>
+fcn GeneralOperators() {
+	> " General operators ... ";
+	// 'Abs'
+	int m = 9;
+	if (Abs(m) != 9 || Abs(-m) != 9 || (-m).Abs() != 9) {
+		throw Exception("Abs(m)");
+	}
+	double d = 44.4d;
+	if (Abs(d) != d || Abs(-d) != d || (-d).Abs() != d) {
+		throw Exception("Abs(d)");
+	}
+	var cplx = Complex[double](3.0, 4.0);
+	if (Abs(cplx) != 5.0 || Abs(-cplx) != 5.0 || (-cplx).Abs() != 5.0) {
+		throw Exception("Abs(cplx)");
+	}
+	
+	// 'Sqrt'
+	if (Sqrt(m) != 3 || m.Sqrt() != 3) {
+		throw Exception("Sqrt(m)");
+	}
+	d = 9.0d;
+	if (Sqrt(d) != 3.0 || d.Sqrt() != 3) {
+		throw Exception("Sqrt(d)");
+	}
+	>>"Beginning run ...";
+	cplx = Complex[double](4.0, 0.0);
+	var sqrt = cplx.Sqrt();
+	if (!sqrt.IsReal || sqrt.Mag != 2.0) {
+		throw Exception("sqrt.IsReal: " + sqrt.IsReal + "; sqrt.Mag: " + sqrt.Mag);
+	}
+	>> "Passed";
+}
+/// <summary>Tests vector arithmetic</summary>
+fcn VectorArithmetic() {
+	>> "Vector arithmetic ...";
+	var vec1 = Vector[int](3, 1, 2, 3);
+	var vec2 = Vector[int](3, -5, -7, -9);
+	var vec3 = Vector[int](4, 13, 44, 86, 99);
+	
+	>> vec1 + 10;
+	>> 10 + vec1;
+	>> vec1 - 10;
+	>> 10 - vec1;
+	
+	>> vec2 * 2;
+	>> 2 * vec2;
+	>> vec2 / 2;
+	>> 2 / vec1;
+	
+	>> "Dot operations:";
+	>> vec2 .* vec1;
+	>> vec2 ./ vec1;
+	>> vec2 .^ vec1;
+	
+	>> vec1 + vec2;
+	>> vec1 - vec2;
+	>> vec2 - vec1;
+	try {
+		>> vec1 + vec3;
+	} catch {
+	}
+	
+	var trans = vec1'; // '
+	>> trans;
+	>> trans * vec1;
+	>> vec1 * trans;
+	
+	>> "Compound operations:";
+	vec1 -= 1;
+	>> vec1;
+	vec1 -= vec2;
+	>> vec1;
+	vec1 += 1;
+	>> vec1;
+	vec1 += vec2;
+	>> vec1;
+	vec1 *= 3;
+	>> vec1;
+	vec1 /= 3;
+	>> vec1;
+	vec1 ^= 2;
+	>> vec1;
+	
+	>> "Passed";
+}
+/// <summary>Test the 'Perms' function</summary>
+fcn TestPerms() {
+	>> "Permutations ...";
+	var vec = Vector[int](3, 1, 2, 3);
+	var mat = vec.Perms();
+	>> Vector[double](4, 2.71828, 3.141592, -4.14, 5.55).Perms();
+	>> "Passed";
+}
+
+
+>> "Testing the RBRX library";
+GeneralOperators();
+VectorArithmetic();
+TestPerms();
+
+/*var cplx = Complex[double](3.0, 4.0);
+>> cplx;
+>> cplx.Sqrt();
+>> cplx.Sqrt(principal := false);*/

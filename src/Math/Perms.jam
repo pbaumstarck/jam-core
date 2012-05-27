@@ -1,0 +1,89 @@
+
+using Rbrx.Structures;
+
+namespace Rbrx.Math
+{
+	/// <summary>Generates the set of all permutations of the items of the input vector, returning them inserted one per row in a matrix</summary>
+	public static fcn Perms[T, Container : T[,] = Matrix[T]](this T[] items) -> Matrix[T]
+	{
+		if (items.Size(1) > 32) {
+			throw InvalidArgumentException("Won't even attempt to calculate all permutations for more than 32 elements");
+		}
+		return Perms_Helper.Do[T, Container](items);
+	}
+	/// <summmary>A helper class to implement the 'Perms' function with proper encapsulation</summmary>
+	internal static class Perms_Helper
+	{
+		/// <summary>Compute the permutations</summary>
+		internal static fcn Do[T, Container](T[] items) -> Matrix[T]
+		{
+			int n = items.Size(0);
+			// Create our associate struct
+			var assoc = Assoc[T, Container](items);
+			return assoc.Perms;
+		}
+		
+		/// <summary>An associate struct for holding variables of the computation</summary>
+		private struct Assoc[T, Container]
+		{
+			/// <summary>The permutations matrix we are filling in</summary>
+			internal readonly Container Perms;
+			/// <summary>The number of items in the array</summary>
+			private readonly int n;
+			/// <summary>The maximum item index</summary>
+			private readonly int maxItemIx;
+			/// <summary>The indices we are currently using for the permutation</summary>
+			private readonly primitive int[] ixes;
+			/// <summary>Which row of the permutation we are working on</summary>
+			private int rowIx;
+			
+			
+			// Constructor
+			internal fcn new(T[] items)
+			{
+				this.n = items.Size(0);
+				this.maxItemIx = this.n - 1;
+				this.ixes = Jam.Malloc[int](this.n);
+				// Allocate the permutation matrix
+				this.Perms = Matrix[T](Factorial(n), n);
+				//this.Perms = Container(Factorial(n), n);
+				
+				// Begin filling in the permutations. The bitset we start with has all bits set and a maximum of 'n' entries.
+				Do(items, Bitset32(false, n), 0);
+				Jam.Free(this.ixes);
+			}
+			
+			
+			/// <summary>Chooses the 'i'th element of the 'rowIx'th permutation. If this is the last open index for the current permutation,
+			/// it fills in the row of the 'Perms' matrix then increments to the next row and backtracks.</summary>
+			/// <param name="i">Which item in the current permutation we are outputting</param>
+			private fcn Do(T[] items, Bitset32 bitset, int i)
+			{
+				if (i == maxItemIx) {
+					// Everyone has chosen an index except us, so find what that is and fill out the row of the result matrix
+					var myIx = bitset.FirstBit(false);
+					ixes(i) = myIx;
+					for j in 0 : maxItemIx {
+						Perms(rowIx, j) = items(ixes(j));
+					}
+					++rowIx;
+				} else {
+					// Loop over all possible bits to set and call the next iteration
+					var settingMap = Bitset32(bitset);
+					for j in 0 : maxItemIx - i {
+						var myIx = settingMap.FirstBit(false);
+						// Tick off all bits in 'settingMap' so that we step through them sequentially
+						settingMap(myIx) = true;
+						ixes(i) = myIx;
+						// Call the next iteration with a sub-bitset that only has the latest bit set
+						var subBitmap = Bitset32(bitset);
+						subBitmap(myIx) = true;
+						Do(items, subBitmap, i + 1);
+					}
+				}
+			}
+		}
+	}
+}
+
+

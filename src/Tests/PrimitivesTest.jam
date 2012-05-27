@@ -1,0 +1,61 @@
+
+using Rbrx;
+
+x = ParseInt32("  -159   ");
+>>x;
+try {
+    u = ParseUInt32(" -13");
+} catch (Core.Exception e) {
+    >>"Caught: " + e.ToString();
+}
+
+fcn TryIParse(string str) {
+    try {
+        x = ParseInt32(str);
+        >>"'" + str + "' -> " + x;
+    } catch (Core.Exception e) {
+        >>"Failed on '" + str + "': " + e.ToString();
+    }
+    try {
+        u = ParseUInt32(str);
+        >>"'" + str + "' -> " + u;
+    } catch (Core.Exception e) {
+        >>"Failed on '" + str + "': " + e.ToString();
+    }
+}
+
+TryIParse("  -159   ");
+TryIParse("  +123154   ");
+
+fcn TryBParse(string str) {
+    try {
+        (success, b) = ParseBool(str, true);
+        >>"'" + str + "' -> " + b;
+    } catch (Core.Exception e) {
+        >>"Failed on '" + str + "': " + e.ToString();
+    }
+}
+TryBParse("True");
+TryBParse("true");
+TryBParse("  true  ");
+TryBParse("  fALSE ");
+TryBParse("  true.  ");
+
+fcn TryFParse(string str) {
+    try {
+        (success, s) = ParseFloat[single](str, true);
+        (success, d) = ParseFloat[double](str, true);
+        >>"'" + str + "' -> " + s + ", " + d;
+    } catch (Core.Exception e) {
+        >>"Failed on '" + str + "': " + e.ToString();
+    }
+}
+TryFParse("44");
+TryFParse("4.4e2");
+TryFParse("Infinity");
+TryFParse("    -Infinity   ");
+TryFParse("   -4.4E-0009   ");
+TryFParse("5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+TryFParse(" NaN ");
+
+

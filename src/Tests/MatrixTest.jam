@@ -1,0 +1,77 @@
+
+using Rbrx.Math;
+
+{
+	var matrix = Rbrx.Math.Matrix[int](3, 2);
+	>> matrix;
+	matrix(0,0) = 67;
+	matrix(2,1) = -9999;
+	>> matrix;
+
+	var sum = matrix + matrix;
+	>> sum;
+
+	var mat1 = Rbrx.Math.Matrix[double](2, 2, 1, 2, 3, 4);
+	>> mat1;
+	>> mat1.Rref();
+	var mat2 = Rbrx.Math.Matrix[double](2, 2, 1, 2, 3, 4);
+	>> "Matrix 2:";
+	>> mat2;
+	>> (inv = mat2.Inv());
+	>> "Product?:";
+	>> mat2 * inv;
+	>> inv * mat2;
+}
+
+{
+	>> "My problem:";
+	var A = Matrix[double](4,3, 25, 5, 1, 49, 7, 1, 81, 9, 1, 121, 11, 1);
+	>> A;
+	var b = Matrix[double](4, 1, 12, 20, 30, 42);
+	>> (A' * A).Inv() * (A') * b; // '
+
+	mat1 = Rbrx.Math.Matrix[double](2, 2, 1, 2, 3, 4);
+	var mat3 = Rbrx.Math.Matrix[double](2, 2, -9, -8, -7, -6);
+	>> "One and three:";
+	>> mat1;
+	>> mat3;
+	>> "Times:";
+	>> mat1 * mat3;
+	>> mat1 .* mat3;
+
+	>> "Others:";
+	>> mat1 ./ mat3;
+	mat1 *= 2;
+	>> mat1;
+	mat1 /= 3;
+	>> mat1;
+}
+
+{
+	>> " *** LU DECOMPOSITION ***";
+	var matrix = Matrix[single](3,3, 1, 2, 3, 4, 5, 6, 7, 8, 0);
+	(L1, U) = LU(matrix);
+	>> "L1:";
+	>> L1;
+	>> "U:";
+	>> U;
+
+	>> "Product:";
+	>> L1 * U;
+
+	(L2, U, P) = LU(matrix);
+	>> "L2:";
+	>> L2;
+	>> "U:";
+	>> U;
+	>> "P:";
+	>> P;
+
+	>> "P*L1:";
+	>> P * L1;
+
+	>> "P*A - L2*U";
+	>> P*matrix - L2*U;
+}
+
+

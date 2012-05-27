@@ -1,0 +1,39 @@
+
+using Rbrx.Structures;
+
+fcn Gimme() -> MinMaxHeap[int] {
+	heap = MinMaxHeap[int]();
+	heap.Add(4);
+	heap.Add(3, 10, 12, 16);
+	heap.Add(20, -4, -5, -6);
+	return heap;
+}
+fcn Gimme2() => {
+	heap = MinMaxHeap[int](16);
+	heap.Add(6, 5, 5, 5);
+	heap.Add(4, 4, 4, 4);
+	heap.Add(10, 10, 10, 10);
+	heap.Add(-1, -1, -1, -1);
+	return heap;
+}
+
+heap = Gimme();
+>> "Maxes:";
+for max in heap.Maxes() {
+	>> " ", max;
+}
+>> "Mins:";
+for min in Gimme().Mins() {
+	>> " ", min;
+}
+
+>> "More maxes:";
+for max in Gimme2().Maxes() {
+	>> " ", max;
+}
+>> "More mins:";
+for min in Gimme2().Mins() {
+	>> " ", min;
+}
+
+

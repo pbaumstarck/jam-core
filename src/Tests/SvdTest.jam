@@ -1,0 +1,31 @@
+
+using Rbrx.Math;
+
+>> "Victoire!";
+
+var matrix = Matrix[double](4, 5);
+matrix(0, 0) = 1;
+matrix(0, 4) = 2;
+matrix(1, 2) = 3;
+matrix(3, 1) = 4;
+>> "Matrix:";
+>> matrix;
+
+(U, S, V) = SVD(matrix);
+>> "U:";
+>> U;
+>> "S:";
+>> S;
+>> "V':";
+>> V'; //'
+
+>> "U * S * V':";
+>> U * S * V'; //'
+
+>> "U * U':";
+>> U * U'; //'
+
+>> "V * V':";
+>> V * V'; //'
+
+

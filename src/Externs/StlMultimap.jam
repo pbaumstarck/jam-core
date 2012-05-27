@@ -1,0 +1,113 @@
+
+// Include this line in your '.jam' files in which you wish to use the 'multimap' class
+//$if (Cpp.Header || Cpp.Source) ${ #include <map> }$
+
+$if (Cpp) {
+	#[extern]
+	namespace std
+	{
+		/// <summary>Extern version of the STL 'multimap&lt;Key, T&gt;' class. Multimap is an associative container that contains a sorted list of key--value pairs. Search, insertion,
+        /// and removal operations have logarithmic complexity.</summary>
+		public class multimap[Key, T]
+		{
+			// Constructors
+			/// <summary>The default constructor that builds an empty map</summary>
+			fcn new();
+            /// <summary>Adds the elements in the range '[first, last)' to the map</summary>
+			fcn new(InputIterator first, InputIterator last);
+			/// <summary>Copy constructor from another map</summary>
+			fcn new(multimap[Key, T] &other);
+			
+			
+			/// <summary>Returns an iterator to the start of the container</summary>
+			fcn begin() -> iterator;
+			/// <summary>Returns an iterator to the end of the container</summary>
+			fcn @end() -> iterator;
+			/// <summary>Returns a reverse iterator to the end of the container</summary>
+			fcn rbegin() -> reverse_iterator;
+			/// <summary>Returns a reverse iterator to the start of the container</summary>
+			fcn rend() -> reverse_iterator;
+			
+			/// <summary>Checks if the container has no elements</summary>
+			fcn empty() -> bool;
+			/// <summary>Returns the number of elements in the container</summary>
+			fcn size() -> int;
+			/// <summary>Returns the maximum number of elements the container is able to hold due to system or library implementation limitations</summary>
+			fcn max_size() -> int;
+			
+			/// <summary>Removes all elements from the container without releasing the allocated memory</summary>
+			fcn clear();
+			
+			/// <summary>Inserts a key--value pair into the container</summary>
+			/// <returns>An iterator to the inserted element</returns>
+			fcn insert(pair[Key, T] value) -> iterator;
+			/// <summary>Inserts a key--value pair into the container using 'hint' as a suggestion of where it should go</summary>
+			/// <returns>An iterator to the inserted element</returns>
+			fcn insert(iterator hint, pair[Key, T] value) -> iterator;
+			/// <summary>Adds the elements in the range '[first, last)' to the set</summary>
+			fcn insert(InputIterator first, InputIterator last);
+			
+			/// <summary>Removes the element at position 'pos'</summary>
+			fcn erase(iterator pos) -> iterator;
+			/// <summary>Removes all elements with the given 'key' and returns the number of such elements erased</summary>
+			fcn erase(Key key) -> int;
+			/// <summary>Removes the elements in the range '[first, last)'</summary>
+			fcn erase(iterator first, iterator last);
+			
+			/// <summary>Exchanges the contents of the container with those of 'other'</summary>
+			fcn swap(multimap[Key, T] &other);
+			
+            /// <summary>Returns the number of elements with the given 'key'</summary>
+            fcn count(Key key) -> int;
+            /// <summary>Finds an element with the given 'key'. If there are several elements with key in the container, the one inserted earlier is selected.</summary>
+            /// <returns>Iterator to an element with the given key, or 'end()' if one was not found</returns>
+            fcn find(Key key) -> iterator;
+
+            /// <summary>Returns a range containing all elements with the given 'key'</summary>
+            /// <returns>Two iterators, one pointing to the first element that is not less than the key, and another pointing to the first element greater than the key</returns>
+            fcn equal_range(Key key) -> pair[iterator, iterator];
+            /// <summary>Returns an iterator pointing to the first element that is not less than the given 'key'</summary>
+            fcn lower_bound(Key key) -> iterator;
+            /// <summary>Returns an iterator pointing to the first element that is greater than the given 'key'</summary>
+            fcn upper_bound(Key key) -> iterator;
+
+
+			/// <summary>The iterator type for the container</summary>
+			struct iterator : BidirectionalIterator
+			{
+				/// <summary>Comparison function between two iterators</summary>
+				static fcn ==(iterator one, iterator two) -> bool;
+				/// <summary>Comparison function between two iterators</summary>
+				static fcn !=(iterator one, iterator two) -> bool;
+
+				/// <summary>Increments the iterator</summary>
+				static fcn ++(iterator value) -> iterator;
+				/// <summary>Decrements the iterator</summary>
+				static fcn --(iterator value) -> iterator;
+
+                /// <summary>Effects a de-reference of the iterator ('iter.DeRef()' translates as '*iter'), yielding the current value</summary>
+                #[dereference_operator]
+                fcn DeRef() -> pair[Key, T];
+			}
+			/// <summary>The reverse iterator type for the container</summary>
+			struct reverse_iterator : BidirectionalIterator
+			{
+				/// <summary>Comparison function between two iterators</summary>
+				static fcn ==(reverse_iterator one, reverse_iterator two) -> bool;
+				/// <summary>Comparison function between two iterators</summary>
+				static fcn !=(reverse_iterator one, reverse_iterator two) -> bool;
+
+				/// <summary>Increments the iterator</summary>
+				static fcn ++(reverse_iterator value) -> reverse_iterator;
+				/// <summary>Decrements the iterator</summary>
+				static fcn --(reverse_iterator value) -> reverse_iterator;
+
+                /// <summary>Effects a de-reference of the iterator ('iter.DeRef()' translates as '*iter'), yielding the current value</summary>
+                #[dereference_operator]
+                fcn DeRef() -> pair[Key, T];
+			}
+		}
+	}
+}
+
+

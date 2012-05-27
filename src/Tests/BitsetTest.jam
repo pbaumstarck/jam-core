@@ -1,0 +1,56 @@
+
+using Rbrx.Binary;
+using Rbrx.Structures;
+
+// TEST: We need this variable to reference 'primtive int[]' for testing purposes
+primitive int[] arr;
+
+var bitset = Bitset(77);
+>> bitset;
+for i in 1 : 2 : 55 {
+	bitset(i) = true;
+	>> bitset;
+}
+for (int i = 60; i < 300; i <<= 1) {
+	bitset(i) = true;
+	>> bitset;
+}
+
+// Test the flat 32-bit bitset
+>> "Testing the 32-bit bitset";
+var set1 = Bitset32();
+for i in 0 : 31 {
+	set1(i) = true;
+	>> set1;
+	if (set1.Values.NbitsSet() != i + 1) {
+		throw Core.Exception("Bad number of bits set");
+	}
+}
+for i in 31 : -1 : 0 {
+	set1(i) = false;
+	>> set1;
+	if (set1.Values.NbitsSet() != i) {
+		throw Core.Exception("Bad number of bits set");
+	}
+}
+>> "Victoire!";
+
+// Also test the 64-bit one
+var set2 = Bitset64();
+for i in 0 : 63 {
+	set2(i) = true;
+	>> set2;
+	if (set2.Values.NbitsSet() != i + 1) {
+		throw Core.Exception("Bad number of bits set");
+	}
+}
+for i in 63 : -1 : 0 {
+	set2(i) = false;
+	>> set2;
+	if (set2.Values.NbitsSet() != i) {
+		throw Core.Exception("Bad number of bits set");
+	}
+}
+>> "Victoire!";
+
+

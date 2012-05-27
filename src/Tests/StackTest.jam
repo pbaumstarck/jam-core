@@ -1,0 +1,58 @@
+
+using Rbrx.Structures;
+
+var stack = Stack[int](8);
+for i in -10 : 10 {
+	stack.Push(i);
+}
+>> "Size: ", stack.Count;
+> "Loop 1";
+for value in stack {
+	> ", ", value;
+}
+>>;
+
+>> "Contains should be F T F: ", stack.Contains(-20), " ", stack.Contains(-20, 0), " ", stack.Contains(-19, 19, 24, 66, 77);
+
+var back = stack.Pop(4);
+>> "Popped back to: ", back;
+
+> "Loop 2";
+for value in stack {
+	> ", ", value;
+}
+>>;
+
+for i in 0 : 6 {
+	>> "Back ", i, " is: ", stack.Peek(i);
+}
+
+stack.Clear();
+stack.Push(8, 9, 13, 21, 112);
+
+> "Loop 3";
+for value in stack {
+	> ", ", value;
+}
+>>;
+
+stack = Stack[int](true, 1);
+> "Loop 4";
+for value in stack {
+	> ", ", value;
+}
+>>;
+
+stack = Stack[int](true, 1, 2, 3);
+> "Loop 5";
+for value in stack {
+	> ", ", value;
+}
+>>;
+
+stack = Stack[int](true, 1, 2, 3);
+> "Loop 6";
+for value in stack {
+	> ", ", value;
+}
+>>;

@@ -1,0 +1,38 @@
+
+// Include this line in your '.jam' files in which you wish to use the 'stack' class
+//$if (Cpp.Header || Cpp.Source) ${ #include <stack> }$
+
+$if (Cpp) {
+	#[extern]
+	namespace std
+	{
+		/// <summary>Extern version of the STL 'stack&lt;T&gt;' class. Provides the functionality of a FILO (first-in, last-out) data structure.</summary>
+		public class stack[T]
+		{
+			// Constructors
+			/// <summary>The default constructor that builds an empty stack</summary>
+			fcn new();
+			/// <summary>Copy constructor from another stack</summary>
+			fcn new(stack[T] &other);
+			
+			
+            /// <summary>Access to the top element in the stack without popping it</summary>
+            fcn top() -> T&;
+
+			/// <summary>Checks if the container has no elements</summary>
+			fcn empty() -> bool;
+			/// <summary>Returns the number of elements in the container</summary>
+			fcn size() -> int;
+
+            /// <summary>Pushes the given value onto the top of the stack</summary>
+            fcn push(T value);
+            /// <summary>Removes the top element from the stack</summary>
+            fcn pop();
+
+            /// <summary>Exchanges the contents of the container with those of 'other'</summary>
+            fcn swap(stack[T] &other);
+		}
+	}
+}
+
+

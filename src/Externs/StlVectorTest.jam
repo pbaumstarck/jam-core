@@ -1,0 +1,57 @@
+
+$if (Cpp.Source || Cpp.Header) ${ #include <vector> }$
+
+using std;
+
+enumerator fcn Enumerate[T](vector[T] vec) -> T {
+    for (var i = vec.begin(); i != vec.@end(); ++i) {
+        return i(0);
+    }
+}
+class B[T] {
+    vector[T] tvec;
+    vector[int] intvec;
+}
+fcn Print(vector[int] vec) {
+    >> "Zomg vector:";
+    for (var i = vec.begin(); i != vec.@end(); ++i) {
+        >> " ", i(0);
+    }
+}
+
+vector[int] vec;
+vec = vector[int](4);
+vec(2) = -19;
+
+vec.push_back(19);
+Print(vec);
+vec.pop_back();
+Print(vec);
+
+>> "Empty?: ", vec.empty();
+
+>> "at(2): ", vec.at(2);
+
+fcn foo(int &value) {
+    value += 10;
+}
+foo(vec(0));
+foo(vec(3));
+Print(vec);
+
+>> "Enumeration:";
+for i in Enumerate(vec) {
+    >> " ", i;
+}
+b = B[string]();
+b.intvec = vec;
+
+vec.back() -= 100;
+vec.front() += 100;
+
+>> "Another loop:";
+for (var i = vec.begin() + 1; i != vec.@end(); i += 1) {
+	>> " ", i(0);
+}
+
+

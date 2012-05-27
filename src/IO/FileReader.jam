@@ -1,0 +1,169 @@
+
+using System.IO;
+
+namespace Rbrx.IO
+{
+    using Rbrx.Structures;
+
+	/// <summary>A class to read from files that translates to all targets</summary>
+	/// <valueparam name=""LineBufferSize"">The size of the stack-allocated 'char*' buffer for reading from the file in C and C++</valueparam>
+	class FileReader[int LineBufferSize = 1024]
+	{
+        $if (C.Fields) ${
+            FILE *fp;
+        }$ $elseif (Cpp) {
+			/// <summary>The file pointer</summary>
+			private FILE fp;
+		} $else {
+			/// <summary>The stream reader</summary>
+			private StreamReader csReader;
+		} 
+
+		
+		// Constructor
+		/// <summary>Opens a file for reading</summary>
+		public fcn new(string filename)
+		{
+			$if (C || Cpp) {
+				int length;
+				char8 c;
+				// Must convert 'filename' to a 'char*'
+				${ char name[$#LineBufferSize]; }$
+				length = filename.Length;
+				for (int i = 0; i < length; ++i) {
+					c = (char8)filename(i);
+					${ name[$i] = c; }$
+				}
+				// Terminate the filename and then open the file pointer
+				${
+					name[$length] = '\0'; 
+					$this->fp = fopen(name, "rb");
+				}$
+			} $else {
+				csReader = StreamReader(filename);
+			}
+		}
+		
+		
+		/// <summary>Reads a single character from the stream</summary>
+		public fcn Read() -> int
+		{
+			$if (C || Cpp) {
+				int ret = -1;
+				${
+					if (($ret = fgetc($this->fp)) == EOF) {
+						return -1;
+					}
+				}$
+				return ret;
+			} $else {
+				return csReader.Read();
+			}
+		}
+		/// <summary>Read a line from the file</summary>
+		public fcn ReadLine() -> string
+		{
+			$if (C || Cpp) {
+				int length;
+				JamStringBuilder builder;
+				char value;
+                bool runWhile;
+				${
+					if (feof($this->fp)) {
+						return NULL;
+					} else {
+					    char line[$#LineBufferSize];
+						}$
+						builder = JamStringBuilder();
+						value = '\0';
+						runWhile = true;
+						${
+                        while ($runWhile && !feof($this->fp)) {
+                            if (fgets(line, $#LineBufferSize, $this->fp) == NULL) {
+								}$
+                                runWhile = false;
+								${
+                            } else {
+								}$
+								// We must copy the characters into the string builder
+								for (int i = 0; ; ++i) {
+									${ $value = line[$i]; }$
+									if (value == '\n' || value == '\0') {
+										// Do not include the terminating carriage return
+										runWhile = false;
+										break;
+									}
+									builder.Append(value);
+								}
+								${
+                            }
+                        }
+						}$
+						var ret = builder.ToString();
+						Jam.Free(builder);
+						return ret;
+						${
+                    }
+                }$
+			} $else {
+				return csReader.ReadLine();
+			}
+		}
+
+        /// <summary>Read from the current file position to the end, returning a string of the entire contents</summary>
+        /// <returns>The string contents, or the empty string ("""") if the file was already empty or had no remaining content</returns>
+        public fcn ReadToEnd() -> string
+        {
+            $if (C || Cpp) {
+                int length;
+                JamStringBuilder builder;
+				char value;
+                length = -1;
+				${
+					if (!feof($this->fp)) {
+					    char line[$#LineBufferSize];
+						}$
+						builder = JamStringBuilder();
+						value = '\0';
+						${
+							while (!feof($this->fp)) {
+								if (($length = fread(line, sizeof(char), $#LineBufferSize, $this->fp)) > 0) {
+									}$
+									// We must copy the 'length' characters read into the string builder
+									builder.EnsureSize(builder.Count + length);
+									for (int i = 0; i < length; ++i) {
+										${ $value = line[$i]; }$
+										builder.Append(value);
+									}
+									${
+								}
+							}
+						}$
+						var ret = builder.ToString();
+						Jam.Free(builder);
+						return ret;
+						${
+					} else {
+						}$
+						return Jam.String.Empty;
+						${ 
+					}
+				}$
+            } $else {
+                return csReader.ReadToEnd();
+            }
+        }
+		
+		/// <summary>Closes the stream and frees any resources</summary>
+		public fcn Close()
+		{
+			$if (C || Cpp) {
+				${ fclose($this->fp); }$
+			} $else {
+				csReader.Close();
+			}
+		}
+	}
+}
+
+

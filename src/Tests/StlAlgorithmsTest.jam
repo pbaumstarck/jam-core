@@ -1,0 +1,49 @@
+
+$if (Cpp.Header || Cpp.Source) ${
+	#include <algorithm>
+	#include <vector>
+}$
+
+using std;
+
+var vec = vector[int]();
+vec.push_back(9);
+vec.push_back(4);
+vec.push_back(3);
+vec.push_back(-4);
+vec.push_back(4);
+
+>> "0: ", count(vec.begin(), vec.@end(), 0);
+>> "4: ", count(vec.begin(), vec.@end(), 4);
+
+var mismo = mismatch(vec.begin(), vec.@end(), vec.begin() + 1);
+>> "Mismatch: ", mismo.first.DeRef(), " ", mismo.second.DeRef();
+
+>> "Equal?: ", equal(vec.begin(), vec.@end(), vec.begin());
+
+var iter = find(vec.begin(), vec.@end(), -3);
+>> "Didn't find" if iter == vec.@end();
+iter = find(vec.begin(), vec.@end(), 3);
+>> "Found: ", iter.DeRef() if iter != vec.@end();
+
+
+sort(vec.begin(), vec.@end());
+>> "Sorted:";
+for (var iter1 = vec.begin(); iter1 != vec.@end(); ++iter1) {
+	>> iter1.DeRef();
+}
+vec.push_back(99);
+vec.push_back(3);
+vec.push_back(7);
+vec.push_back(-13);
+vec.push_back(-113);
+
+var fourth = vec.begin() + 3;
+nth_element(vec.begin(), fourth, vec.@end());
+>> "4th element: ", fourth.DeRef();
+>> "After:";
+for (var iter1 = vec.begin(); iter1 != vec.@end(); ++iter1) {
+	>> iter1.DeRef();
+}
+
+

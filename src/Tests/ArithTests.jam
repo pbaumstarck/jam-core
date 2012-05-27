@@ -1,0 +1,65 @@
+
+using Rbrx.Math;
+
+>> "Arithmetic tests:";
+
+>> Log(4.3s);
+>> Log(0.0s);
+>> Log(-1.0s);
+>> Log(Jam.Float32.NaN);
+>> Log(Jam.Float32.PosInf);
+
+>> Log(4.3);
+>> Log(0.0);
+>> Log(-1.0);
+>> Log(Jam.Float64.NaN);
+>> Log(Jam.Float64.PosInf);
+
+>> Log10(4.3s);
+>> Log10(0.0s);
+>> Log10(-1.0s);
+>> Log10(Jam.Float32.NaN);
+>> Log10(Jam.Float32.PosInf);
+
+>> Log10(4.3);
+>> Log10(0.0);
+>> Log10(-1.0);
+>> Log10(Jam.Float64.NaN);
+>> Log10(Jam.Float64.PosInf);
+
+>> Sin(Jam.Float32.NaN);
+>> Sin(Jam.Float32.NegInf);
+>> Sin(Jam.Float32.PosInf);
+>> Sin(Jam.Float64.NaN);
+>> Sin(Jam.Float64.NegInf);
+>> Sin(Jam.Float64.PosInf);
+
+>> Cos(Jam.Float32.NaN);
+>> Cos(Jam.Float32.NegInf);
+>> Cos(Jam.Float32.PosInf);
+>> Cos(Jam.Float64.NaN);
+>> Cos(Jam.Float64.NegInf);
+>> Cos(Jam.Float64.PosInf);
+
+>> Tan(Jam.Float32.NaN);
+>> Tan(Jam.Float32.NegInf);
+>> Tan(Jam.Float32.PosInf);
+>> Tan(Jam.Float64.NaN);
+>> Tan(Jam.Float64.NegInf);
+>> Tan(Jam.Float64.PosInf);
+
+>> Ceil(Jam.Float32.NaN);
+>> Ceil(Jam.Float32.NegInf);
+>> Ceil(Jam.Float32.PosInf);
+>> Ceil(Jam.Float64.NaN);
+>> Ceil(Jam.Float64.NegInf);
+>> Ceil(Jam.Float64.PosInf);
+
+>> Floor(Jam.Float32.NaN);
+>> Floor(Jam.Float32.NegInf);
+>> Floor(Jam.Float32.PosInf);
+>> Floor(Jam.Float64.NaN);
+>> Floor(Jam.Float64.NegInf);
+>> Floor(Jam.Float64.PosInf);
+
+

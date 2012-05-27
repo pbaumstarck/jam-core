@@ -1,0 +1,29 @@
+
+using Rbrx.Math;
+
+>> "Testing 'Primes'";
+>> Primes(2)'; //'
+>> Primes(3)'; //'
+>> Primes(100)'; //'
+var primes = Primes(1000)'; //'
+>> primes;
+
+// Test 'IsPrime'
+int ix = 0;
+for (int i = 0; i <= 997; ++i) {
+	if (i == primes(ix)) {
+		// It's prime
+		if (!IsPrime(i)) {
+			throw Core.Exception("This was supposed to be prime: " + i);
+		}
+		++ix;
+	} else {
+		// It's composite
+		if (IsPrime(i)) {
+			throw Core.Exception("This was supposed to be composite: " + i);
+		}
+	}
+}
+>> "'IsPrime' worked, too.";
+
+

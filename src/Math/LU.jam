@@ -1,0 +1,156 @@
+
+using Core;
+
+namespace Rbrx.Math
+{
+	/// <summary>Computes the LU decomposition of a matrix 'A'.</summary>
+	/// <citation>William H. Press , Saul A. Teukolsky , William T. Vetterling , Brian P. Flannery, "Numerical Recipes in C: The Art of Scientific Computing,"
+	/// Cambridge University Press, New York, NY, 1992, Section 2.3 "LU Decomposition and Its Applications."</citation>
+	public static fcn LU[T, Output = Matrix[T]](this T[,] A) -> (Output L, Output U, Output P?)
+	{
+		readonly int n = A.Size(1);
+		throw Core.Exception("Matrix must be square") if A.Size(2) != n;
+		// Copy the matrix into 'lulu' and then run the in-place algorithm on it
+		var lulu = Output(n, n);
+		for (int r = 0; r < n; ++r) {
+			for (int c = 0; c < n; ++c) {
+				lulu(r, c) = A(r, c);
+			}
+		}
+		int imax = -1;
+		// Stores the implicit scaling of each row
+		var vv = Jam.Malloc[T](n);
+		// This is a vector that records the row permutation effected by the partial pivoting. But we only need that if we're not going to be generating the permutation
+		// matrix 'P', because then we need will this to reverse-effect the row permtuations on 'L'.
+		primitive int[] indx = null;
+		// This vector is initialized to the range '0 : n - 1' and tracks the cumulative permutation of the rows, in effect registering the effect of 'indx' all at once.
+		// This makes it easier to calculate the permutation matrix, 'P', but, since it is used only for that, we don't allocate it unless necessary.
+		primitive int[] cumPerm = null;
+		if (#P) {
+			cumPerm = Jam.Malloc[int](n);
+			for (int i = 0; i < n; ++i) {
+				cumPerm(i) = i;
+			}
+		} else {
+			indx = Jam.Malloc[int](n);
+		}
+		// Keep track of whether we had an odd number of row interchanges
+		var oddNrowInters = false;
+		try {
+			// This is the main loop over the columns to be reduced
+			for (int i = 0; i < n; ++i) {
+				// Search for a pivot
+				var big = 0 as T;
+				for (int j = 0; j < n; ++j) {
+					var temp = Abs(lulu(i, j));
+					if (temp > big) {
+						big = temp;
+					}
+				}
+				throw Core.Exception("Matrix is singular to working precision") if big == 0.0;
+				vv(i) = (1 as T) / big;
+			}
+			// This is the loop over the columns of Crout's method
+			for (int j = 0; j < n; ++j) {
+				for (int i = 0; i < j; ++i) {
+					var sum = lulu(i, j);
+					for (int k = 0; k < i; ++k) {
+						sum -= lulu(i, j) * lulu(k, j);
+					}
+					lulu(i, j) = sum;
+				}
+				var big = 0 as T;
+				imax = j;
+				for (int i = j; i < n; ++i) {
+					var sum = lulu(i, j);
+					for (int k = 0; k < j; ++k) {
+						sum -= lulu(i, k) * lulu(k, j);
+					}
+					lulu(i, j) = sum;
+					var dummy = vv(i) * Abs(sum);
+					if (dummy >= big) {
+						big = dummy;
+						imax = i;
+					}
+				}
+				if (j != imax) {
+					// We need to interchange rows
+					for (int k = 0; k < n; ++k) {
+						var dummy = lulu(imax, k);
+						lulu(imax, k) = lulu(j, k);
+						lulu(j, k) = dummy;
+					}
+					// Change the parity of 'oddNrowInters'
+					oddNrowInters = !oddNrowInters;
+					// Also interchange the scaling factors
+					vv(imax) = vv(j);
+				}
+				if (#P) {
+					// Swap entries 'j' and 'imax' in the permutation vector 'cumPerm'
+					var permTemp = cumPerm(j);
+					cumPerm(j) = cumPerm(imax);
+					cumPerm(imax) = permTemp;
+				} else {
+					indx(j) = imax;
+				}
+				throw Core.Exception("Matrix is singular to working precision") if lulu(j, j) == (0 as T);
+				if (j != n) {
+					// Divide by the pivot element
+					var dummy = (1 as T) / lulu(j, j);
+					for (int i = j + 1; i < n; ++i) {
+						lulu(i, j) *= dummy;
+					}
+				}
+			}
+			// At this point we have computed decomposed 'A' as 'P * A = lulu', where 'lulu' is a superposition of 'L' and 'U', and 'P' is the row permutation matrix defined
+			// by 'indx'. Depending on which outputs the user asked for, now we construct the exact outputs that they want.
+			// But, no matter what, we have to split matrix 'L' out from 'lulu', and then change that into 'U', so do that now
+			var preL = Output(n, n);
+			for (int c = 0; c < n; ++c) {
+				preL(c, c) = 1 as T;
+				for (int r = c + 1; r < n; ++r) {
+					preL(r, c) = lulu(r, c);
+					lulu(r, c) = 0 as T;
+				}
+			}
+			if (#P) {
+				// They also want the permutation matrix, so construct that from 'cumPerm'
+				var preP = Output(n, n);
+				for i in cumPerm {
+					preP(#i, i) = 1 as T;
+				}
+				P = preP;
+				L = preL;
+				U = lulu;
+			} else {
+				// They don't want the permutation matrix, so we have to effect the inverse permutations on 'L' in the reverse order using 'indx'
+				P = null;
+				for (int i = n - 1; i >= 0; --i) {
+					var otherI = indx(i);
+					if (otherI != i) {
+						// Swap rows 'i' and 'otherI'
+						for (int k = 0; k < n; ++k) {
+							var dummy = preL(otherI, k);
+							preL(otherI, k) = preL(i, k);
+							preL(i, k) = dummy;
+						}
+					}
+				}
+				L = preL;
+				U = lulu;
+			}
+		} finally {
+			if (vv != null) {
+				Jam.Free(vv);
+			}
+			if (cumPerm != null) {
+				Jam.Free(cumPerm);
+			}
+			if (indx != null) {
+				Jam.Free(indx);
+			}
+		}
+	}
+}
+
+

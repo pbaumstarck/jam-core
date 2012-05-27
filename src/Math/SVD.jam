@@ -1,0 +1,338 @@
+
+using Core;
+
+namespace Rbrx.Math
+{
+	/// <summary>Computes the singular value decomposition of a matrix 'A'.</summary>
+	/// <citation>William H. Press , Saul A. Teukolsky , William T. Vetterling , Brian P. Flannery, "Numerical Recipes in C: The Art of Scientific Computing,"
+	/// Cambridge University Press, New York, NY, 1992, Section 2.6 "Singular Value Decomposition."</citation>
+	public static fcn SVD[T, Output = Matrix[T]](this T[,] A) -> (Output U, Output S, Output V)
+	{
+		readonly int m = A.Size(1), n = A.Size(2);
+		// Copy the matrix into 'preU' and then run the in-place algorithm on it
+		var preU = Output(m, n);
+		for (int r = 0; r < m; ++r) {
+			for (int c = 0; c < n; ++c) {
+				preU(r, c) = A(r, c);
+			}
+		}
+		U = null;
+		var preV = Output(n, n);
+		
+		// 'rv1' is an internal auxiliary vector, and 'w' is the vector of working singular values
+		primitive T[] rv1 = null, w = null;
+		try {
+			rv1 = Jam.Malloc[T](n);
+			w = Jam.Malloc[T](n);
+			T g = 0 as T, scale = 0 as T, anorm = 0 as T, s = 0 as T, h = 0 as T, f = 0 as T;
+			// Householder reduction to bidiagonal form
+			int _l = 0;
+			for (int i = 0; i < n; ++i) {
+				_l = i + 1;
+				rv1(i) = scale * g;
+				g = s = scale = 0 as T;
+				if (i < m) {
+					for (int k = i; k < m; ++k) {
+						scale += Abs(preU(k, i));
+					}
+					if (scale != (0 as T)) {
+						for (int k = i; k < m; ++k) {
+							preU(k, i) /= scale;
+							var Utemp = preU(k, i);
+							s += Utemp * Utemp;
+						}
+						f = preU(i, i);
+						g = -(f >= (0 as T) ? Sqrt(s) : -Sqrt(s));
+						h = f * g - s;
+						preU(i, i) = f - g;
+						for (int j = _l; j < n; ++j) {
+							s = 0 as T;
+							for (int k = i; k < m; ++k) {
+								s += preU(k, i) * preU(k, j);
+							}
+							f = s / h;
+							for (int k = i; k < m; ++k) {
+								preU(k, j) += f * preU(k, i);
+							}
+						}
+						for (int k = i; k < m; ++k) {
+							preU(k, i) *= scale;
+						}
+					}
+				}
+				w(i) = scale * g;
+				g = s = scale = 0 as T;
+				if (i < m && i != n - 1) {
+					for (int k = _l; k < n ; ++k) {
+						scale += Abs(preU(i, k));
+					}
+					if (scale != (0 as T)) {
+						for (int k = _l; k < n; ++k) {
+							preU(i, k) /= scale;
+							var temp = preU(i, k);
+							s += temp * temp;
+						}
+						f = preU(i, _l);
+						g = -(f >= (0 as T) ? Sqrt(s) : -Sqrt(s));
+						h = f * g - s;
+						preU(i, _l) = f - g;
+						for (int k = _l; k < n; ++k) {
+							rv1(k) = preU(i, k) / h;
+						}
+						for (int j = _l; j < m; ++j) {
+							s = 0 as T;
+							for (int k = _l; k < n; ++k) {
+								s += preU(j, k) * preU(i, k);
+							}
+							for (int k = _l; k < n; ++k) {
+								preU(j, k) += s * rv1(k);
+							}
+						}
+						for (int k = _l; k < n; ++k) {
+							preU(i, k) *= scale;
+						}
+					}
+				}
+				var anormTemp = Abs(w(i)) + Abs(rv1(i));
+				if (anormTemp > anorm) {
+					anorm = anormTemp;
+				}
+			}
+			// Accumulation of right-hand transformations
+			for (int i = n - 1; i >= 0; --i) {
+				if (i < n - 1) {
+					if (g != (0 as T)) {
+						for (int j = _l; j < n; ++j) {
+							// Double division to avoid possible underflow
+							preV(j, i) = (preU(i, j) / preU(i, _l)) / g;
+						}
+						for (int j = _l; j < n; ++j) {
+							s = 0 as T;
+							for (int k = _l; k < n; ++k) {
+								s += preU(i, k) * preV(k, j);
+							}
+							for (int k = _l; k < n; ++k) {
+								preV(k, j) += s * preV(k, i);
+							}
+						}
+					}
+					for (int j = _l; j < n; ++j) {
+						preV(i, j) = 0 as T;
+						preV(j, i) = 0 as T;
+					}
+				}
+				preV(i, i) = 1 as T;
+				g = rv1(i);
+				_l = i;
+			}
+			// Accumulation of left-hand transformations
+			for (int i = (m < n ? m : n) - 1; i >= 0; --i) {
+				_l = i + 1;
+				g = w(i);
+				for (int j = _l; j < n; ++j) {
+					preU(i, j) = 0 as T;
+				}
+				if (g != (0 as T)) {
+					g = (1 as T) / g;
+					for (int j = _l; j < n; ++j) {
+						s = 0 as T;
+						for (int k = _l; k < m; ++k) {
+							s += preU(k, i) * preU(k, j);
+						}
+						f = (s / preU(i, i)) * g;
+						for (int k = i; k < m; ++k) {
+							preU(k, j) += f * preU(k, i);
+						}
+					}
+					for (int j = i; j < m; ++j) {
+						preU(j, i) *= g;
+					}
+				} else {
+					for (int j = i; j < m; ++j) {
+						preU(j, i) = 0 as T;
+					}
+				}
+				++preU(i, i);
+			}
+			// Diagonalization of the bidiagonal form: loop over singular values, and over allowed iterations
+			for (int k = n - 1; k >= 0; --k) {
+				T x = 0 as T, y = 0 as T, z = 0 as T, c = 0 as T;
+				var nm = 0;
+				for (int its = 1; its <= 30; ++its) {
+					var flag = true;
+					// Test for splitting
+					for (_l = k; _l >= 0; --_l) {
+						nm = _l - 1;
+						if ((Abs(rv1(_l)) + anorm) == anorm) {
+							flag = false;
+							break;
+						}
+						if ((Abs(w(nm)) + anorm) == anorm) {
+							break;
+						}
+					}
+					if (flag) {
+						// Cancellation of 'rv1(_l)' if '_l > 1'
+						c = 0 as T;
+						s = 1 as T;
+						for (int i = _l; i <= k; ++i) {
+							f = s * rv1(i);
+							rv1(i) = c * rv1(i);
+							break if (Abs(f) + anorm) == anorm;
+							g = w(i);
+							h = Pythag(f, g);
+							w(i) = h;
+							h = (1 as T) / h;
+							c = g * h;
+							s = -f * h;
+							for (int j = 0; j < m; ++j) {
+								y = preU(j, nm);
+								z = preU(j, i);
+								preU(j, nm) = y * c + z * s;
+								preU(j, i) = z * c - y * s;
+							}
+						}
+					}
+					z = w(k);
+					if (_l == k) {
+						// Convergence
+						if (z < (0 as T)) {
+							// Singular value is made non-negative
+							w(k) = -z;
+							for (int j = 0; j < n; ++j) {
+								preV(j, k) = -preV(j, k);
+							}
+						}
+						break;
+					}
+					throw Core.Exception("No convergence in 'SVD' after 30 iterations") if its == 30;
+					// Shift from bottom 2-by-2 minor
+					x = w(_l);
+					nm = k - 1;
+					y = w(nm);
+					g = rv1(nm);
+					h = rv1(k);
+					f = ((y - z) * (y + z) + (g - h) * (g + h)) / ((2 as T) * h * y);
+					g = Pythag(f, 1 as T);
+					f = ((x - z) * (x + z) + h * ((y / (f + (f >= (0 as T) ? Abs(g) : -Abs(g)))) - h)) / x;
+					// Next QR transformation
+					c = s = 1 as T;
+					for (int j = _l; j <= nm; ++j) {
+						i = j + 1;
+						g = rv1(i);
+						y = w(i);
+						h = s * g;
+						g = c * g;
+						z = Pythag(f, h);
+						rv1(j) = z;
+						c = f / z;
+						s = h / z;
+						f = x * c + g * s;
+						g = g * c - x * s;
+						h = y * s;
+						y *= c;
+						for (int jj = 0; jj < n; ++jj) {
+							x = preV(jj, j);
+							z = preV(jj, i);
+							preV(jj, j) = x * c + z * s;
+							preV(jj, i) = z * c - x * s;
+						}
+						z = Pythag(f, h);
+						// Rotation can be arbitrary if 'z == 0'
+						w(j) = z;
+						if (z != (0 as T)) {
+							z = (1 as T) / z;
+							c = f * z;
+							s = h * z;
+						}
+						f = c * g + s * y;
+						x = c * y - s * g;
+						for (int jj = 0; jj < m; ++jj) {
+							y = preU(jj, j);
+							z = preU(jj, i);
+							preU(jj, j) = y * c + z * s;
+							preU(jj, i) = z * c - y * s;
+						}
+					}
+					rv1(_l) = 0 as T;
+					rv1(k) = f;
+					w(k) = x;
+				}
+			}
+			// The singular values of 'w' are in no particular order, so we need to sort them to recover the proper one. Then we take the derived permutation indices
+			// and apply those to the columns of 'preU' and 'preV'. But there may be columns of 'preU' that are all zeros (corresponding to zero values in 'w'), and we
+			// want these columns to be dropped first, yet there is no guarantee that the sorting on 'w' will effect that. But, since all the singular values are
+			// positive, we can set them negative for the zero columns of 'preU' and then they will show up last in the sort, and will thus be dropped from 'U'.
+			for (int c = 0; c < n; ++c) {
+				var zero = true;
+				for (int r = 0; r < m; ++r) {
+					if (!(preU(r, c) == (0 as T))) {
+						zero = false;
+						break;
+					}
+				}
+				if (zero) {
+					w(c) = -1 as T;
+				}
+			}
+			var ixes = w.Quicksort();
+			// Fill in 'S' from the sorted 'w'
+			S = Output(m, n);
+			var bound = (m < n ? m : n) - 1;
+			for (int i = 0; i < bound; ++i) {
+				var value = w(n - 1 - i);
+				break if value == (0 as T);
+				S(i, i) = value;
+			}
+			// Construct 'U' from 'preU'`s columns permuted by 'ixes'
+			U = Output(m, m);
+			for (int c = 0; c < m; ++c) {
+				var ix = ixes(n - 1 - c);
+				for (int r = 0; r < m; ++r) {
+					U(r, c) = preU(r, ix);
+				}
+			}
+			// Construct 'U' from 'preU'`s columns permuted by 'ixes'
+			V = Output(n, n);
+			for (int c = 0; c < n; ++c) {
+				var ix = ixes(n - 1 - c);
+				for (int r = 0; r < n; ++r) {
+					V(r, c) = preV(r, ix);
+				}
+			}
+		} finally {
+			if (rv1 != null) {
+				Jam.Free(rv1);
+			}
+			if (w != null) {
+				Jam.Free(w);
+			}
+			if (preU != null) {
+				Jam.Free(preU);
+			}
+			if (preV != null) {
+				Jam.Free(preV);
+			}
+		}
+	}
+
+	/// <summary>Computes '(a^2 + b^2)^(1/2)' without destructive underflow or overflow</summary>
+	/// <citation>William H. Press , Saul A. Teukolsky , William T. Vetterling , Brian P. Flannery, "Numerical Recipes in C: The Art of Scientific Computing,"
+	/// Cambridge University Press, New York, NY, 1992, Section 2.6 "Singular Value Decomposition."</citation>
+	public static fcn Pythag[T : Jam.KSingleton](T a, T b) =>
+	{
+		var absa = Abs(a);
+		var absb = Abs(b);
+		if (absa > absb) {
+			var temp = absb / absa;
+			return absa * Sqrt(1 + temp * temp);
+		} else if (absb == (0 as T)) {
+			return 0 as T;
+		} else {
+			var temp = absa / absb;
+			return absb * Sqrt(1 + temp * temp);
+		}
+	}
+}
+
+

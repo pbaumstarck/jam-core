@@ -1,0 +1,150 @@
+
+// Include this line in your '.jam' files in which you wish to use the 'vector' class
+//$if (Cpp.Header || Cpp.Source) ${ #include <vector> }$
+
+$if (Cpp) {
+	#[extern]
+	namespace std
+	{
+		/// <summary>Extern version of the STL 'vector&lt;T&gt;' class. Vector is a container that supports fast random access to the elements and fast insertion
+		/// or removal of elements at the end of the container. Fast element insertion or removal in the middle of the container is not supported. It is implemented
+		/// as a contiguous array, which means that pointer arithmetic is fully supported.</summary>
+		public class vector[T]
+		{
+			// Constructors
+			/// <summary>The default constructor that builds an empty array</summary>
+			fcn new();
+			/// <summary>Constructor that takes a given number of elements</summary>
+			fcn new(int count);
+			/// <summary>Constructor that takes a given number of elements and a value to fill them in with</summary>
+			fcn new(int count, T value);
+			/// <summary>Constructor that adds the elements in the range '[first, last)' to the vector</summary>
+			fcn new(InputIterator first, InputIterator last);
+			/// <summary>Copy constructor from another array</summary>
+			fcn new(vector[T] &other);
+			
+			
+			/// <summary>Replaces the contents of the container with the given number of values</summary>
+			fcn assign(int count, T value);
+			/// <summary>Replaces the contents of the container with the elements in the range '[first, last)'</summary>
+			fcn assign(InputIterator first, InputIterator last);
+			/// <summary>Returns the element at the specified position</summary>
+			fcn at(int pos) -> T&;
+			
+			/// <summary>Indexer-style access to the elements of the container</summary>
+			T& this(int i) { get; set; }
+			/// <summary>Access to the front element of the container</summary>
+			fcn front() -> T&;
+			/// <summary>Access to the back element of the container</summary>
+			fcn back() -> T&;
+			
+			
+			/// <summary>Returns an iterator to the start of the container</summary>
+			fcn begin() -> iterator;
+			/// <summary>Returns an iterator to the end of the container</summary>
+			fcn @end() -> iterator;
+			/// <summary>Returns a reverse iterator to the end of the container</summary>
+			fcn rbegin() -> reverse_iterator;
+			/// <summary>Returns a reverse iterator to the start of the container</summary>
+			fcn rend() -> reverse_iterator;
+			
+			/// <summary>Checks if the container has no elements</summary>
+			fcn empty() -> bool;
+			/// <summary>Returns the number of elements in the container</summary>
+			fcn size() -> int;
+			/// <summary>Returns the maximum number of elements the container is able to hold due to system or library implementation limitations</summary>
+			fcn max_size() -> int;
+			/// <summary>Sets the capacity of the container to at least 'size'</summary>
+			fcn reserve(int size);
+			/// <summary>Returns the number of elements that the container has currently allocated space for</summary>
+			fcn capacity() -> int;
+			/// <summary>Removes all elements from the container without releasing the allocated memory</summary>
+			fcn clear();
+			
+			/// <summary>Inserts an element into the container before the element pointed to by 'pos'</summary>
+			/// <returns>The iterator following the last element inserted</returns>
+			fcn insert(iterator pos, T value) -> iterator;
+			/// <summary>Inserts 'count' copies of the element into the container before the element pointed to by 'pos'</summary>
+			/// <returns>The iterator following the last element inserted</returns>
+			fcn insert(iterator pos, int count, T value);
+			/// <summary>Copies the elements in the range '[first, last)' into the container before the element at position 'pos'</summary>
+			/// <returns>The iterator following the last element inserted</returns>
+			fcn insert(iterator pos, InputIterator first, InputIterator last);
+			
+			/// <summary>Removes the element at position 'pos'</summary>
+			/// <returns>The iterator following the last element removed</returns>
+			fcn erase(iterator pos) -> iterator;
+			/// <summary>Removes the elements in the range '[first, last)'</summary>
+			/// <returns>The iterator following the last element removed</returns>
+			fcn erase(iterator first, iterator last) -> iterator;
+			
+			/// <summary>Appends the given element to the end of the container</summary>
+			fcn push_back(T value);
+			/// <summary>Removes the last element of the container</summary>
+			fcn pop_back();
+			
+			/// <summary>Resizes the container to contain 'count' elements</summary>
+			fcn resize(int count);
+			/// <summary>Exchanges the contents of the container with those of 'other'</summary>
+			fcn swap(vector[T] &other);
+			
+
+			/// <summary>The iterator type for the container</summary>
+			struct iterator : RandomAccessIterator
+			{
+				/// <summary>Comparison function between two iterators</summary>
+				static fcn ==(iterator one, iterator two) -> bool;
+				/// <summary>Comparison function between two iterators</summary>
+				static fcn !=(iterator one, iterator two) -> bool;
+
+				/// <summary>Advances the iterator by 'offset'</summary>
+				static fcn +(iterator iter, int offset) -> iterator;
+				/// <summary>Decrements the iterator by 'offset'</summary>
+				static fcn -(iterator value, int offset) -> iterator;
+				/// <summary>Increments the iterator</summary>
+				static fcn ++(iterator value) -> iterator;
+				/// <summary>Decrements the iterator</summary>
+				static fcn --(iterator value) -> iterator;
+				/// <summary>Advances the iterator by 'offset'</summary>
+				fcn +=(int offset) -> iterator;
+				/// <summary>Regresses the iterator by 'offset'</summary>
+				fcn -=(int offset) -> iterator;
+				
+				/// <summary>Indexed item offset from the iterator</summary>
+				T this(int i) { get; set; }
+				/// <summary>Effects a de-reference of the iterator ('iter.DeRef()' translates as '*iter'), yielding a reference to the current value</summary>
+                #[dereference_operator]
+                fcn DeRef() -> T&;
+			}
+			/// <summary>The reverse iterator type for the container</summary>
+			struct reverse_iterator : RandomAccessIterator
+			{
+				/// <summary>Comparison function between two iterators</summary>
+				static fcn ==(reverse_iterator one, reverse_iterator two) -> bool;
+				/// <summary>Comparison function between two iterators</summary>
+				static fcn !=(reverse_iterator one, reverse_iterator two) -> bool;
+
+				/// <summary>Advances the iterator by 'offset'</summary>
+				static fcn +(reverse_iterator iter, int offset) -> reverse_iterator;
+				/// <summary>Decrements the iterator by 'offset'</summary>
+				static fcn -(reverse_iterator value, int offset) -> reverse_iterator;
+				/// <summary>Increments the iterator</summary>
+				static fcn ++(reverse_iterator value) -> reverse_iterator;
+				/// <summary>Decrements the iterator</summary>
+				static fcn --(reverse_iterator value) -> reverse_iterator;
+				/// <summary>Advances the iterator by 'offset'</summary>
+				fcn +=(int offset) -> reverse_iterator;
+				/// <summary>Regresses the iterator by 'offset'</summary>
+				fcn -=(int offset) -> reverse_iterator;
+				
+				/// <summary>Indexed item offset from the iterator</summary>
+				T this(int i) { get; set; }
+				/// <summary>Effects a de-reference of the iterator ('iter.DeRef()' translates as '*iter'), yielding a reference to the current value</summary>
+                #[dereference_operator]
+                fcn DeRef() -> T&;
+			}
+		}
+	}
+}
+
+

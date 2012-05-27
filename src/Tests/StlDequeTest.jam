@@ -1,0 +1,31 @@
+
+
+$if (Cpp.Header || Cpp.Source) ${ #include <deque> }$
+using std;
+
+var dq = deque[string]();
+dq.push_back("1");
+dq.push_back("2");
+dq.push_back("3");
+dq.push_back("4");
+dq.push_back("5");
+
+>> "Front and back: ", dq.front(), " ", dq.back();
+dq.pop_front();
+dq.front() = "One";
+dq.back() = "Last";
+
+>> "Front and back: ", dq.front(), " ", dq.back();
+
+>> "All contents:";
+for i in 0 : dq.size() - 1 {
+    >> "  ", i, ": ", dq(i);
+}
+>> "In stereo--err, reverse this time, Observer:";
+var iter = dq.rbegin();
+while (iter != dq.rend()) {
+    >> "  ", #while, ": ", iter(0);
+    ++iter;
+}
+
+

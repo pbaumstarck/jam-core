@@ -1,0 +1,193 @@
+
+using System.IO;
+
+namespace Rbrx.IO
+{
+	/// <summary>A class to read binary data from a file. Translates to all targets.</summary>
+	public class JamBinaryReader
+	{
+        $if (C.Fields) ${
+            FILE *fp;
+        }$ $elseif (Cpp) {
+			/// <summary>The file pointer</summary>
+			private FILE fp;
+		} $else {
+			/// <summary>The stream that reads from the file</summary>
+			private FileStream fileStream;
+			/// <summary>The binary reader</summary>
+			private BinaryReader binaryReader;
+		}
+		
+		
+		// Constructor
+		/// <summary>Opens a file for reading</summary>
+		public fcn new(string filename)
+		{
+			$if (C || Cpp) {
+				int length;
+				char8 c;
+				// Must convert 'filename' to a 'char*'
+				${ char name[1024]; }$
+				length = filename.Length;
+				for (int i = 0; i < length; ++i) {
+					c = (char8)filename(i);
+					${ name[$i] = c; }$
+				}
+				// Terminate the filename and then open the file pointer
+				${
+					name[$length] = '\0'; 
+					$this->fp = fopen(name, "rb");
+				}$
+			} $else {
+				fileStream = FileStream(filename, FileMode.Open);
+				binaryReader = BinaryReader(fileStream);
+			}
+		}
+		
+		
+		/// <sumamry>Closes the file stream</summary>
+		public fcn Close()
+		{
+			$if (C || Cpp) ${
+				fclose($this->fp);
+			}$ $else {
+				fileStream.Close();
+				binaryReader.Close();
+			}
+		}
+		
+		
+		/// <summary>Read a single 'bool' from the stream</summary>
+		public fcn ReadBool() -> bool
+		{
+			$if (C || Cpp) {
+				bool value = false;
+				${ fread(&$value, sizeof(unsigned char), 1, $this->fp); }$
+				return value;
+			} $else {
+				return binaryReader.ReadBoolean();
+			}
+		}
+	
+		/// <summary>Read a single 'uint8' from the stream</summary>
+		public fcn ReadUInt8() -> uint8
+		{
+			$if (C || Cpp) {
+				uint8 value = 0;
+				${ fread(&$value, 1, 1, $this->fp); }$
+				return value;
+			} $else {
+				return binaryReader.ReadByte();
+			}
+		}
+		/// <summary>Read a single 'uint16' from the stream</summary>
+		public fcn ReadUInt16() -> uint16
+		{
+			$if (C || Cpp) {
+				uint16 value = 0;
+				${ fread(&$value, 2, 1, $this->fp); }$
+				return value;
+			} $else {
+				return binaryReader.ReadUInt16();
+			}
+		}
+		/// <summary>Read a single 'uint32' from the stream</summary>
+		public fcn ReadUInt32() -> uint32
+		{
+			$if (C || Cpp) {
+				uint32 value = 0;
+				${ fread(&$value, 4, 1, $this->fp); }$
+				return value;
+			} $else {
+				return binaryReader.ReadUInt32();
+			}
+		}
+		/// <summary>Read a single 'uint64' from the stream</summary>
+		public fcn ReadUInt64() -> uint64
+		{
+			$if (C || Cpp) {
+				uint64 value = 0;
+				${ fread(&$value, 8, 1, $this->fp); }$
+				return value;
+			} $else {
+				return binaryReader.ReadUInt64();
+			}
+		}
+		/// <summary>Read a single 'int8' from the stream</summary>
+		public fcn ReadInt8() -> int8
+		{
+			$if (C || Cpp) {
+				int8 value = 0;
+				${ fread(&$value, 1, 1, $this->fp); }$
+				return value;
+			} $else {
+				return binaryReader.ReadSByte();
+			}
+		}
+		/// <summary>Read a single 'int16' from the stream</summary>
+		public fcn ReadInt16() -> int16
+		{
+			$if (C || Cpp) {
+				int16 value = 0;
+				${ fread(&$value, 2, 1, $this->fp); }$
+				return value;
+			} $else {
+				return binaryReader.ReadInt16();
+			}
+		}
+		/// <summary>Read a single 'int32' from the stream</summary>
+		public fcn ReadInt32() -> int32
+		{
+			$if (C || Cpp) {
+				int32 value = 0;
+				${ fread(&$value, 4, 1, $this->fp); }$
+				return value;
+			} $else {
+				return binaryReader.ReadInt32();
+			}
+		}
+		/// <summary>Read a single 'int64' from the stream</summary>
+		public fcn ReadInt64() -> int64
+		{
+			$if (C || Cpp) {
+				int64 value = 0;
+				${ fread(&$value, 8, 1, $this->fp); }$
+				return value;
+			} $else {
+				return binaryReader.ReadInt64();
+			}
+		}
+		
+		/// <summary>Read a single 'single' from the stream</summary>
+		public fcn ReadSingle() -> single
+		{
+			$if (C || Cpp) {
+				single value = 0;
+				${ fread(&$value, 4, 1, $this->fp); }$
+				return value;
+			} $else {
+				return binaryReader.ReadSingle();
+			}
+		}
+		/// <summary>Read a single 'double' from the stream</summary>
+		public fcn ReadDouble() -> double
+		{
+			$if (C || Cpp) {
+				double value = 0;
+				${ fread(&$value, 8, 1, $this->fp); }$
+				return value;
+			} $else {
+				return binaryReader.ReadDouble();
+			}
+		}
+		/*
+		/// <summary>Read a specified number of 'uint8's from the stream, placing them into the array starting at the given offset</summary>
+		/// <returns>The number of 'uint8's read into the array</returns>
+		public fcn ReadUInt8s(primitive uint8[] @array, int offset, int count) -> int
+		{
+			return 0;
+		}*/
+	}
+}
+
+

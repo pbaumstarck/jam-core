@@ -1,0 +1,59 @@
+
+using Rbrx.Math;
+
+namespace Rbrx.Math
+{
+	// A dummy matrix class
+	public class Matrix[T = double] : T[,]
+	{
+		public const int Ndims = 2;
+		private primitive T[] values;
+		public fcn Size(int dim) -> int
+		{
+			throw Core.Exception();
+		}
+		fcn new(int i, int j, int values*) { }
+		public T this(int i, int j)
+		{
+			get { throw Core.Exception(); }
+			set { throw Core.Exception(); }
+		}
+	}
+}
+
+// Seed the vector
+var vec = Vector[int](89);
+for i in 0 : 88 {
+	vec(i) = i;
+}
+var perm = 47;
+for i in 0 : 1000 {
+	var ix1 = perm;
+	perm = (perm * 29 + 13) % 89;
+	var ix2 = perm;
+	var temp = vec(ix1);
+	vec(ix1) = vec(ix2);
+	vec(ix2) = temp;
+	perm = (perm * 29 + 13) % 89;
+}
+>> "Starting vector:";
+>> vec'; //'
+
+var sorted1 = vec.Copy();
+sorted1.Quicksort();
+>> "Sorted 1:";
+>> sorted1'; //'
+
+var sorted2 = vec.Copy();
+var ixes = sorted2.Quicksort();
+>> "Sorted 2:";
+>> sorted2'; //'
+>> "Equal?: ", sorted1.Equals(sorted2);
+
+>> "Ixes:";
+>> ixes'; //'
+
+>> "Trying to re-index 'vec':";
+>> vec(ixes)'; //'
+
+

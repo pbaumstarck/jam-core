@@ -1,0 +1,92 @@
+
+using Rbrx.Math;
+using Rbrx.Structures;
+
+namespace Rbrx.Math
+{
+	/// <summary>Generates a list of all primes up to 'max', including 'max' if it is prime</summary>
+	/// <typeparam name="Container">The return type to contain the list in</typeparam>
+	public static fcn Primes[Container = Vector[int]](this int max) -> Container
+	{
+		if (max == 2) {
+			var ret = Container(1);
+			ret(0) = 2;
+			return ret;
+		} else {
+			// Use the Sieve of Eratosthenes to fill in a bitset of primes. We automatically disregard all even numbers, so the bitset's elements stand for (3, 5, 7, ...).
+			// Also, since the bitset is initialized to all 'false' values, we use 'false' to mean prime.
+			readonly int maxIx = ((max - 1) >> 1) - 1;
+			var bitset = Bitset(maxIx + 1);
+			// Our counter for primes, which starts at one for the prime 2
+			var nPrimes = 1;
+			for i in 0 : (Sqrt(max) >> 1) {
+				if (!bitset(i)) {
+					// 'i' represents the number '3 + 2 * i', so cancel out all multiples of it using this complicated stepping procedure
+					for j in (3 * i + 3) : (3 + 2 * i) : maxIx {
+						bitset(j) = true;
+					}
+					++nPrimes;
+				}
+			}
+			// We can now allocate our result array
+			var ret = Container(nPrimes);
+			ret(0) = 2;
+			var ix = 1;
+			for i in 0 : maxIx {
+				if (!bitset(i)) {
+					ret(ix++) = 3 + 2 * i;
+				}
+			}
+			// Throw the bitset away
+			Jam.Free(bitset);
+			return ret;
+		}
+	}
+	
+	/// <summary>Determines whether the number 'n' is prime</summary>
+	public static fcn IsPrime(this int n) -> bool
+	{
+		if (n < 0) {
+			throw InvalidArgumentException();
+		}
+		if (n <= 32) {
+			switch (n) {
+				case 0, 1 => return false;
+				case 2, 3 => return true;
+				case 4 => return false;
+				case 5 => return true;
+				case 6 => return false;
+				case 7 => return true;
+				case 8, 9, 10 => return false;
+				case 11 => return true;
+				case 12 => return false;
+				case 13 => return true;
+				case 14, 15, 16 => return false;
+				case 17 => return true;
+				case 18 => return false;
+				case 19 => return true;
+				case 20, 21, 22 => return false;
+				case 23 => return true;
+				case 24, 25, 26, 27, 28 => return false;
+				case 29 => return true;
+				case 30 => return false;
+				case 31 => return true;
+				default => return false;
+			}
+		} else if ((n & 0x1u) == 0) {
+			// It's even
+			return false;
+		} else {
+			// No other choice but to use division
+			readonly var sqrt = Sqrt(n) as int;
+			for factor in 3 : 2 : sqrt {
+				if (n % factor == 0) {
+					return false;
+				}
+			}
+			return true;
+		}
+	}
+}
+
+

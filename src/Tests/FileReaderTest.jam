@@ -1,0 +1,26 @@
+
+using Rbrx.IO;
+
+reader = FileReader("testText.txt");
+>> "Reading by lines:";
+string str;
+while ((str = reader.ReadLine()) != null) {
+	>> "Read: ", str;
+}
+>> "$\n";
+
+>> "Reading by characters:";
+reader.Close();
+reader = FileReader("testText.txt");
+int i;
+while ((i = reader.Read()) != -1) {
+	> (char)i;
+}
+>> "$\n";
+
+>> "Reading _in toto_:";
+reader.Close();
+reader = FileReader("testText.txt");
+>> reader.ReadToEnd(), "$\n";
+
+

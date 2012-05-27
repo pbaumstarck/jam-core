@@ -1,0 +1,34 @@
+
+using Rbrx.Binary;
+
+uint last = 1;
+for i in 0 : 1_000_000u {
+	if ((value1 = NbitsSet((uint)i)) != (value2 = NbitsSet((ulong)i))) {
+		>> "We got a problem: ", value1, ", ", value2;
+	}
+	if (i >= last) {
+		>> "Done: ", i, " ...";
+		last <<= 1;
+	}
+}
+>> "Okay!";
+uint x = 0;
+>> x, ": ", x.NbitsSet();
+x = Jam.UInt8.MaxValue;
+>> x, ": ", x.NbitsSet();
+x = Jam.UInt16.MaxValue;
+>> x, ": ", x.NbitsSet();
+x = Jam.UInt32.MaxValue;
+>> x, ": ", x.NbitsSet();
+
+ulong ll = 0;
+>> ll, ": ", ll.NbitsSet();
+ll = Jam.UInt8.MaxValue;
+>> ll, ": ", ll.NbitsSet();
+ll = Jam.UInt16.MaxValue;
+>> ll, ": ", ll.NbitsSet();
+ll = Jam.UInt32.MaxValue;
+>> ll, ": ", ll.NbitsSet();
+ll = Jam.UInt64.MaxValue;
+>> ll, ": ", ll.NbitsSet();
+

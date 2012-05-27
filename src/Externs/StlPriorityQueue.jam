@@ -1,0 +1,40 @@
+
+// Include this line in your '.jam' files in which you wish to use the 'queue' class
+//$if (Cpp.Header || Cpp.Source) ${ #include <queue> }$
+
+$if (Cpp) {
+	#[extern]
+	namespace std
+	{
+		/// <summary>Extern version of the STL 'priority_queue&lt;T&gt;' class. Priority queue is a container that allows for constant-time maximum extraction at the
+        /// expense of logarithmic insertion. Working with a 'priority_queue' is similar to managing a heap in some random access container, with the benefit of not
+        /// being able to accidentally invalidate the heap.</summary>
+		public class priority_queue[T]
+		{
+			// Constructors
+			/// <summary>The default constructor that builds an empty priority queue</summary>
+			fcn new();
+			/// <summary>Copy constructor from another priority queue</summary>
+			fcn new(priority_queue[T] &other);
+			
+			
+            /// <summary>Access to the top element in the priority queue, which is the one that will be removed with a call to 'pop'</summary>
+            fcn top() -> T&;
+
+			/// <summary>Checks if the container has no elements</summary>
+			fcn empty() -> bool;
+			/// <summary>Returns the number of elements in the container</summary>
+			fcn size() -> int;
+
+            /// <summary>Pushes the given value into the priority queue</summary>
+            fcn push(T value);
+            /// <summary>Removes the top element from the priority queue</summary>
+            fcn pop();
+
+            /// <summary>Exchanges the contents of the container with those of 'other'</summary>
+            fcn swap(priority_queue[T] &other);
+		}
+	}
+}
+
+

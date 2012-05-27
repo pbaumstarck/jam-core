@@ -1,0 +1,84 @@
+
+$if (C || Cpp) {
+	/// <summary>Returns the square root of the value</summary>
+	#[extern]
+	fcn sqrt(single value) -> float;
+	/// <summary>Returns the square root of the value</summary>
+	#[extern]
+	fcn sqrt(double value) -> double;
+	
+	/// <summary>Returns the value raised to the given integer power</summary>
+	#[extern]
+	fcn pow(single value, int pow) -> single;
+	/// <summary>Returns the value raised to the given power</summary>
+	#[extern]
+	fcn pow(single value, single pow) -> single;
+	/// <summary>Returns the value raised to the given integer power</summary>
+	#[extern]
+	fcn pow(double value, int pow) -> double;
+	/// <summary>Returns the value raised to the given power</summary>
+	#[extern]
+	fcn pow(double value, double pow) -> double;
+	
+	/// <summary>Class representing a file pointer in C++ (will work but generate compiler warnings in C)</summary>
+	#[extern]
+	class FILE { }
+	
+	/// <summary>Returns the natural logarithm of the value</summary>
+	#[extern]
+	fcn log(single value) -> single;
+	/// <summary>Returns the natural logarithm of the value</summary>
+	#[extern]
+	fcn log(double value) -> double;
+	
+	/// <summary>Returns the base-10 logarithm of the value</summary>
+	#[extern]
+	fcn log10(single value) -> single;
+	/// <summary>Returns the base-10 logarithm of the value</summary>
+	#[extern]
+	fcn log10(double value) -> double;
+	
+	/// <summary>Returns the base-'e' exponential function of the value</summary>
+	#[extern]
+	fcn exp(single value) -> single;
+	/// <summary>Returns the base-'e' exponential function of the value</summary>
+	#[extern]
+	fcn exp(double value) -> double;
+	
+	/// <summary>Returns the sine of the angle in radians</summary>
+	#[extern]
+	fcn sin(single value) -> single;
+	/// <summary>Returns the sine of the angle in radians</summary>
+	#[extern]
+	fcn sin(double value) -> double;
+	
+	/// <summary>Returns the cosine of the angle in radians</summary>
+	#[extern]
+	fcn cos(single value) -> single;
+	/// <summary>Returns the cosine of the angle in radians</summary>
+	#[extern]
+	fcn cos(double value) -> double;
+	
+	/// <summary>Returns the tangent of an angle in radians</summary>
+	#[extern]
+	fcn tan(single value) -> single;
+	/// <summary>Returns the tangent of an angle in radians</summary>
+	#[extern]
+	fcn tan(double value) -> double;
+		
+	/// <summary>Returns the smallest integral value that is not less than 'value'</summary>
+	#[extern]
+	fcn ceil(single value) -> single;
+	/// <summary>Returns the smallest integral value that is not less than 'value'</summary>
+	#[extern]
+	fcn ceil(double value) -> double;
+	
+	/// <summary>Returns the largest integral value that is not greater than 'value'</summary>
+	#[extern]
+	fcn floor(single value) -> single;
+	/// <summary>Returns the largest integral value that is not greater than 'value'</summary>
+	#[extern]
+	fcn floor(double value) -> double;
+}
+
+

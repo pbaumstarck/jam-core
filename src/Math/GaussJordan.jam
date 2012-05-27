@@ -1,0 +1,90 @@
+
+using Core;
+
+namespace Rbrx.Math
+{
+	/// <summary>Computes the inverse of a matrix 'A' using Gauss-Jordan elimination.</summary>
+	/// <citation>William H. Press , Saul A. Teukolsky , William T. Vetterling , Brian P. Flannery, "Numerical Recipes in C: The Art of Scientific Computing,"
+	/// Cambridge University Press, New York, NY, 1992, Section 2.1 "Gauss-Jordan elimination."</citation>
+	public static fcn GaussJordan[T, Output = Matrix[T]](this T[,] A) -> Output
+	{
+		readonly int n = A.Size(1);
+		throw Core.Exception("Matrix must be square") if A.Size(2) != n;
+		// Copy the matrix into 'gauss' and then run the in-place algorithm on it
+		var gauss = Output(n, n);
+		for (int r = 0; r < n; ++r) {
+			for (int c = 0; c < n; ++c) {
+				gauss(r, c) = A(r, c);
+			}
+		}
+		int icol = -1, irow = -1;
+		// We concatenate the three 'n'-element bookkeeping integer vectors into one, addressable as '[ipiv indxc indxr]'
+		var ipiv_indxc_indxr = Jam.Malloc[int](3 * n);
+		try {
+			// This is the main loop over the columns to be reduced
+			for (int i = 0; i < n; ++i) {
+				// Search for a pivot
+				var big = 0 as T;
+				for (int j = 0; j < n; ++j) {
+					if (ipiv_indxc_indxr /*ipiv(j) */ (j) != 1) {
+						// We haven't already used this column
+						for (int k = 0; k < n; ++k) {
+							if (ipiv_indxc_indxr /*ipiv(k) */ (k) == 0) {
+								var temp = Abs(gauss(j, k));
+								if (temp >= big) {
+									big = temp;
+									irow = j;
+									icol = k;
+								}
+							}
+						}
+					}
+				}
+				++ipiv_indxc_indxr /*ipiv */ (icol);
+				if (irow != icol) {
+					for (int _l = 0; _l < n; ++_l) {
+						var temp = gauss(irow, _l);
+						gauss(irow, + _l) = gauss(icol, + _l);
+						gauss(icol, + _l) = temp;
+					}
+				}
+				ipiv_indxc_indxr /*indxr(i) */(2 * n + i) = irow;
+				ipiv_indxc_indxr /*indxc(i) */(n + i) = icol;
+				var pivTemp = gauss(irow, icol);
+				throw Core.Exception("Matrix is singular to working precision") if pivTemp == 0;
+				var pivInv = (1 as T) / pivTemp;
+				gauss(irow, icol) = 1 as T;
+				for (int _l = 0; _l < n; ++_l) {
+					gauss(icol, _l) *= pivInv;
+				}
+				for (int _ll = 0; _ll < n; ++_ll) {
+					if (_ll != icol) {
+						var temp = gauss(_ll, icol);
+						gauss(_ll, icol) = 0 as T;
+						for (int _l = 0; _l < n; ++_l) {
+							gauss(_ll, _l) -= gauss(icol, _l) * temp;
+						}
+					}
+				}
+			}
+			for (int _l = n - 1; _l >= 0; --_l) {
+				var indxr_l = ipiv_indxc_indxr /*indxr(_l) */(2 * n + _l);
+				var indxc_l = ipiv_indxc_indxr /*indxc(_l) */(n + _l);
+				if (indxr_l != indxc_l) {
+					for (int k = 0; k < n; ++k) {
+						var temp = gauss(k, indxr_l);
+						gauss(k, indxr_l) = gauss(k, indxc_l);
+						gauss(k, indxc_l) = temp;
+					}
+				}
+			}
+		} finally {
+			if (ipiv_indxc_indxr != null) {
+				Jam.Free(ipiv_indxc_indxr);
+			}
+		}
+		return gauss;
+	}
+}
+
+

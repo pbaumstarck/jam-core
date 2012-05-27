@@ -1,0 +1,45 @@
+
+$if (Cpp.Header || Cpp.Source) ${ #include <set> }$
+
+using std;
+
+class A {
+	int a;
+	
+	fcn new { a };
+	
+	override fcn ToString() -> string {
+		return "A: " + a;
+	}
+}	
+
+fcn Print(multi) {
+	for (var iter = multi.begin(); iter != multi.@end(); ++iter) {
+		>> iter.DeRef();
+	}
+}
+
+var multi = multiset[A]();
+A Am3 = null, A3 = null;
+for i in 1 : 5 {
+	if (i == 3) {
+		multi.insert(A3 = A(i));
+		multi.insert(Am3 = A(-i));
+	} else {
+		multi.insert(A(i));
+		multi.insert(A(-i));
+	}
+}
+Print(multi);
+var mThree = multi.find(Am3);
+>> mThree != multi.@end();
+var three = multi.find(A3);
+>> three != multi.@end();
+
+for i in 1 : 3 {
+    mThree = multi.erase(mThree);
+}
+//multi.erase(mThree, three);
+Print(multi);
+
+

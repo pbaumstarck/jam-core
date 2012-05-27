@@ -1,0 +1,77 @@
+
+using Rbrx.Structures;
+
+var list = LinkedList[int]();
+list.AddLast(1);
+list.AddLast(2);
+list.AddLast(3);
+list.AddLast(54);
+list.AddLast(8);
+list.AddLast(-11);
+list.AddLast(-67);
+list.AddLast(32);
+
+> "Loop 1";
+for i in list {
+	> ", ", i;
+}
+>>;
+
+>> "Evicting ...";
+var first = list.RemoveFirst();
+>> first;
+var second = list.RemoveLast();
+>> second;
+
+> "Loop 2";
+for i in list {
+	> ", ", i;
+}
+>>;
+
+// Change some elements
+list(1) += 72;
+list(2) = -99;
+> "Loop 3";
+for i in list {
+	> ", ", i;
+}
+>>;
+
+list.InsertAfter(list.First, 1_000_000);
+list.InsertAfter(list.First, 1_000_001, 1_000_002, 1_000_003);
+
+> "Loop 4";
+for i in list {
+	> ", ", i;
+}
+>>;
+
+list = LinkedList[int](6, 7, -19, 41);
+> "Loop 5";
+for i in list {
+	> ", ", i;
+}
+>>;
+var last = list.AddLast(100, 101, 102);
+list.InsertBefore(last, -50, -51, -52);
+> "Loop 6";
+for i in list {
+	> ", ", i;
+}
+>>;
+
+LinkedList[int].Node find;
+while ((find = list.Find(88, -50, 101)) != null) {
+	list.Remove(find);
+}
+if ((find = list.FindLast(6, 102)) != null) {
+	list.Remove(find);
+}
+> "Loop 7";
+for i in list {
+	> ", ", i;
+}
+>>;
+
+

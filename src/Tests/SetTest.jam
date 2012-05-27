@@ -1,0 +1,124 @@
+
+using Rbrx.Structures;
+
+set1 = Set[int]();
+set1.VerifyTree();
+set1.Add(0);
+set1.VerifyTree();
+set1.Add(3);
+set1.VerifyTree();
+set1.Add(-19);
+set1.VerifyTree();
+set1.Add(-4);
+set1.VerifyTree();
+set1.Add(17);
+set1.VerifyTree();
+set1.Add(6);
+set1.VerifyTree();
+set1.Add(12);
+set1.VerifyTree();
+set1.Add(-2);
+set1.VerifyTree();
+
+>> "Loop 1:";
+for item in set1 {
+	>> " Got: ", item;
+}
+
+set1.Remove(-4, 3, 17);
+set1.VerifyTree();
+>> "Loop 2:";
+for item in set1 {
+	>> " Got: ", item;
+}
+
+>> "Trying redundant add: ", set1.Add(0);
+>> "Trying effectless remove: ", set1.Remove(99);
+
+
+struct S {
+    int Field;
+	fcn new { Field };
+
+    override fcn ToString() -> string {
+        return "S: " + Field;
+    }
+	static fcn ==(S s1, S s2) -> bool {
+		return s1.Field == s2.Field;
+	}
+}
+struct SComparer : KLess[S] {
+    static fcn Compare(S s1, S s2) -> bool {
+        return s1.Field < s2.Field;
+    }
+}
+
+set2 = Set[S, SComparer]();
+>> "Victoire!";
+var s1 = S(1);
+var s4 = S(4);
+var sm9 = S(-9);
+var sm3 = S(-3);
+var s3 = S(3);
+set2.Add(s1);
+set2.Add(s4);
+set2.Add(sm9);
+set2.Add(sm3);
+set2.Add(s3);
+>> "Loop 3:";
+for item in set2 {
+	>> " Got: ", item;
+}
+
+set2.Remove(S(1), S(4));
+>> "Loop 4:";
+for item in set2 {
+	>> " Got: ", item;
+}
+
+>> "Should be false: ", set2.Contains(S(99), S(-99));
+>> "Should be true: ", set2.Contains(S(99), S(-3), S(-99));
+
+
+
+class A {
+	int Field;
+	fcn new { Field };
+	
+    override fcn ToString() -> string {
+        return "A: " + Field;
+    }
+}
+struct AComparer : KLess[A] {
+	static fcn Compare(A a1, A a2) -> bool {
+		return a1.Field < a2.Field;
+	}
+}
+
+set3 = Set[A, AComparer]();
+>> "Victoire!";
+var a1 = A(1);
+var a4 = A(4);
+var am9 = A(-9);
+var am3 = A(-3);
+var a3 = A(3);
+set3.Add(a1);
+set3.Add(a4);
+set3.Add(am9);
+set3.Add(am3);
+set3.Add(a3);
+>> "Loop 3:";
+for item in set3 {
+	>> " Got: ", item;
+}
+
+>> "No-op removes: ", set3.Remove(A(1), A(4));
+>> "Loop 4:";
+for item in set3 {
+	>> " Got: ", item;
+}
+
+>> "Should be false: ", set3.Contains(A(1), A(4));
+>> "Should be true: ", set3.Contains(am9);
+>> "Should be true: ", set3.Contains(A(1), am3, A(4));
+

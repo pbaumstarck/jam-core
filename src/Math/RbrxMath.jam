@@ -1,0 +1,277 @@
+
+using System;
+
+namespace Rbrx.Math
+{
+	/// <summary>Performs the 'signum' function on the value, which returns '0' for 0 inputs, '1' for positive, and '-1' for negative</summary>
+	public static fcn Sgn[T : Jam.KReal](this T value) -> int
+	{
+		if (value == 0) {
+			return 0;
+		} else {
+			return value < 0 ? -1 : 1;
+		}
+	}
+
+	/// <summary>Return the absolute value of something, which checks '>= 0' and performs a unary minus if necessary</summary>
+	public static fcn Abs[T : Jam.KReal](this T arg) -> T
+	{
+		return arg >= 0 ? arg : -arg;
+	}
+	/// <summary>Return the magnitude of a complex number</summary>
+	public static fcn Abs[T](this Jam.KComplex[T] value) -> T
+	{
+		var @real = value.Real;
+		var @imag = value.Imag;
+		return Sqrt(@real * @real + @imag * @imag);
+	}
+	
+	/// <summary>Takes the square root of a singleton value via the '^' operator</summary>
+	public static fcn Sqrt[T : Jam.KSingleton](this T value) -> T
+	{
+		return (value ^ 0.5) as T;
+	}
+	/// <summary>Takes the square root of a 'single' value with translation to 'sqrt' or 'Math.Sqrt' functions</summary>
+	public static fcn Sqrt(this single value) -> single
+	{
+		$if (C || Cpp) {
+			return sqrt(value);
+		} $else {
+			return System.Math.Sqrt(value) as single;
+		}
+	}
+	/// <summary>Takes the square root of a 'double' value with translation to 'sqrt' or 'Math.Sqrt' functions</summary>
+	public static fcn Sqrt(this double value) -> double
+	{
+		$if (C || Cpp) {
+			return sqrt(value);
+		} $else {
+			return System.Math.Sqrt(value);
+		}
+	}
+	
+	
+	/// <summary>Computes the minimum of the provided values using the '<' operator, and returns an optional index (0-based) at which the minimum was found</summary>
+	public static fcn Min[T](T a, T b+) -> (T, int ix?)
+	{
+		ix = 0;
+		for i in b {
+			if (i < a) {
+				a = i;
+				ix = #i;
+			}
+		}
+		return a;
+	}
+	
+	/// <summary>Return the factorial of 'n'</summary>
+	public static fcn Factorial(this int n) -> int
+	{
+		if (n < 0) {
+			throw InvalidArgumentException();
+		} else if (n == 0 || n == 1) {
+			return 1;
+		} else {		
+			var ret = n;
+			while (--n > 1) {
+				ret *= n;
+			}
+			return ret;
+		}
+	}
+	/// <summary>Return the factorial of 'n'</summary>
+	public static fcn Factorial(this long n) -> long
+	{
+		if (n < 0) {
+			throw InvalidArgumentException();
+		} else if (n == 0 || n == 1) {
+			return 1;
+		} else {		
+			var ret = n;
+			while (--n > 1) {
+				ret *= n;
+			}
+			return ret;
+		}
+	}
+	
+	/// <summary>Returns an identity matrix of the given size</summary>
+	public static fcn Eye[T = double, Container : T[,] = Matrix[T]](int m, int n = -1) -> Container
+	{
+		if (m < 0) {
+			throw ArrayInvalidSizeException();
+		}
+		readonly int minIx;
+		if (n == -1) {
+			// Make it square by default
+			n = m;
+			minIx = m - 1;
+		} else {
+			minIx = (m < n ? m : n) - 1;
+		}
+		var ret = Container(m, n);
+		for i in 0 : minIx {
+			ret(i, i) = 1 as T;
+		}
+		return ret;
+	}
+	
+	/// <summary>Returns the natural logarithm of the value</summary>
+	public static fcn Log(this single value) -> single
+	{
+		$if (C || Cpp) {
+			return log(value);
+		} $else {
+			return System.Math.Log(value) as single;
+		}
+	}
+	/// <summary>Returns the natural logarithm of the value</summary>
+	public static fcn Log(this double value) -> double
+	{
+		$if (C || Cpp) {
+			return log(value);
+		} $else {
+			return System.Math.Log(value);
+		}
+	}
+	/// <summary>Returns the base-10 logarithm of the value</summary>
+	public static fcn Log10(this single value) -> single
+	{
+		$if (C || Cpp) {
+			return log10(value);
+		} $else {
+			return System.Math.Log10(value) as single;
+		}
+	}
+	/// <summary>Returns the base-10 logarithm of the value</summary>
+	public static fcn Log10(this double value) -> double
+	{
+		$if (C || Cpp) {
+			return log10(value);
+		} $else {
+			return System.Math.Log10(value);
+		}
+	}
+	
+	/// <summary>Returns the base-'e' exponential function of the value</summary>
+	public static fcn Exp(this single value) -> single
+	{
+		$if (C || Cpp) {
+			return exp(value);
+		} $else {
+			return System.Math.Exp(value) as single;
+		}
+	}
+	/// <summary>Returns the base-'e' exponential function of the value</summary>
+	public static fcn Exp(this double value) -> double
+	{
+		$if (C || Cpp) {
+			return exp(value);
+		} $else {
+			return System.Math.Exp(value);
+		}
+	}
+	
+	
+	// Trigonometric functions
+	
+	/// <summary>Returns the sine of the angle in radians</summary>
+	public static fcn Sin(this single value) -> single
+	{
+		$if (C || Cpp) {
+			return sin(value);
+		} $else {
+			return System.Math.Sin(value) as single;
+		}
+	}
+	/// <summary>Returns the sine of the angle in radians</summary>
+	public static fcn Sin(this double value) -> double
+	{
+		$if (C || Cpp) {
+			return sin(value);
+		} $else {
+			return System.Math.Sin(value);
+		}
+	}
+	
+	/// <summary>Returns the cosine of the angle in radians</summary>
+	public static fcn Cos(this single value) -> single
+	{
+		$if (C || Cpp) {
+			return cos(value);
+		} $else {
+			return System.Math.Cos(value) as single;
+		}
+	}
+	/// <summary>Returns the cosine of the angle in radians</summary>
+	public static fcn Cos(this double value) -> double
+	{
+		$if (C || Cpp) {
+			return cos(value);
+		} $else {
+			return System.Math.Cos(value);
+		}
+	}
+	
+	/// <summary>Returns the tangent of the angle in radians</summary>
+	public static fcn Tan(this single value) -> single
+	{
+		$if (C || Cpp) {
+			return tan(value);
+		} $else {
+			return System.Math.Tan(value) as single;
+		}
+	}
+	/// <summary>Returns the tangent of the angle in radians</summary>
+	public static fcn Tan(this double value) -> double
+	{
+		$if (C || Cpp) {
+			return tan(value);
+		} $else {
+			return System.Math.Tan(value);
+		}
+	}
+	
+	
+	// Rounding functions
+	
+	/// <summary>Returns the smallest integral value that is not less than 'value'</summary>
+	public static fcn Ceil(this single value) -> single
+	{
+		$if (C || Cpp) {
+			return ceil(value);
+		} $else {
+			return System.Math.Ceiling(value) as single;
+		}
+	}
+	/// <summary>Returns the smallest integral value that is not less than 'value'</summary>
+	public static fcn Ceil(this double value) -> double
+	{
+		$if (C || Cpp) {
+			return ceil(value);
+		} $else {
+			return System.Math.Ceiling(value);
+		}
+	}
+	
+	/// <summary>Returns the largest integral value that is not greater than 'value'</summary>
+	public static fcn Floor(this single value) -> single
+	{
+		$if (C || Cpp) {
+			return floor(value);
+		} $else {
+			return System.Math.Floor(value) as single;
+		}
+	}
+	/// <summary>Returns the largest integral value that is not greater than 'value'</summary>
+	public static fcn Floor(this double value) -> double
+	{
+		$if (C || Cpp) {
+			return floor(value);
+		} $else {
+			return System.Math.Floor(value);
+		}
+	}
+}
+
+

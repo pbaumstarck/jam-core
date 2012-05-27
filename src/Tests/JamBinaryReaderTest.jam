@@ -1,0 +1,57 @@
+
+using Rbrx.IO;
+
+var reader = JamBinaryReader("binaryTest.bin");
+
+>> "Bool: ", reader.ReadBool();
+>> "UInt8: ", reader.ReadUInt8();
+>> "UInt16: ", reader.ReadUInt16();
+>> "UInt32: ", reader.ReadUInt32();
+>> "UInt64: ", reader.ReadUInt64();
+>> "Int8: ", reader.ReadInt8();
+>> "Int16: ", reader.ReadInt16();
+>> "Int32: ", reader.ReadInt32();
+>> "Int64: ", reader.ReadInt64();
+
+fcn ReadSingle(JamBinaryReader reader, single check) {
+	single @single;
+	>> "Single: ", @single = reader.ReadSingle();
+	if (@single != check) {
+		if (@single != @single && check != check) {
+			// This was 'NaN', so it's okay
+		} else {
+			>> "  Bad value: read ", @single, " but expected ", check;
+		}
+	}
+}
+fcn ReadDouble(JamBinaryReader reader, double check) {
+	double @double;
+	>> "Double: ", @double = reader.ReadDouble();
+	if (@double != check) {
+		if (@double != @double && check != check) {
+			// This was 'NaN', so it's okay
+		} else {
+			>> "  Bad value: read ", @double, " but expected ", check;
+		}
+	}
+}
+
+ReadSingle(reader, 44.4f);
+ReadSingle(reader, Jam.Float32.Epsilon);
+ReadSingle(reader, Jam.Float32.MinValue);
+ReadSingle(reader, Jam.Float32.MaxValue);
+ReadSingle(reader, Jam.Float32.NaN);
+ReadSingle(reader, Jam.Float32.NegInf);
+ReadSingle(reader, Jam.Float32.PosInf);
+
+ReadDouble(reader, 88.8);
+ReadDouble(reader, Jam.Float64.Epsilon);
+ReadDouble(reader, Jam.Float64.MinValue);
+ReadDouble(reader, Jam.Float64.MaxValue);
+ReadDouble(reader, Jam.Float64.NaN);
+ReadDouble(reader, Jam.Float64.NegInf);
+ReadDouble(reader, Jam.Float64.PosInf);
+
+reader.Close();
+
+

@@ -1,0 +1,40 @@
+
+// Include this line in your '.jam' files in which you wish to use the 'queue' class
+//$if (Cpp.Header || Cpp.Source) ${ #include <queue> }$
+
+$if (Cpp) {
+	#[extern]
+	namespace std
+	{
+		/// <summary>Extern version of the STL 'queue&lt;T&gt;' class. Provides the functionality of a FIFO (first-in, first-out) data structure.</summary>
+		public class queue[T]
+		{
+			// Constructors
+			/// <summary>The default constructor that builds an empty queue</summary>
+			fcn new();
+			/// <summary>Copy constructor from another queue</summary>
+			fcn new(queue[T] &other);
+			
+			
+            /// <summary>Access to the first element in the queue, which is the one that will be removed with a call to 'pop'</summary>
+            fcn top() -> T&;
+            /// <summary>Access to the last element in the queue, which is the most recently pushed element</summary>
+            fcn back() -> T&;
+
+			/// <summary>Checks if the container has no elements</summary>
+			fcn empty() -> bool;
+			/// <summary>Returns the number of elements in the container</summary>
+			fcn size() -> int;
+
+            /// <summary>Pushes the given value onto the end of the queue</summary>
+            fcn push(T value);
+            /// <summary>Removes the top element from the queue</summary>
+            fcn pop();
+
+            /// <summary>Exchanges the contents of the container with those of 'other'</summary>
+            fcn swap(queue[T] &other);
+		}
+	}
+}
+
+

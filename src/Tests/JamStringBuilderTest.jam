@@ -1,0 +1,15 @@
+
+using Rbrx.Structures;
+
+var sb = JamStringBuilder();
+sb.Append("gar");
+>> sb;
+sb.Append("gar");
+>> sb.ToString();
+sb.Append("GAR");
+>> sb;
+sb.Append("yar");
+>> sb;
+sb.Append(" moooooo ").Append(" farm");
+>> sb;
+

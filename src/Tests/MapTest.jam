@@ -1,0 +1,93 @@
+
+using Rbrx.Structures;
+
+map = Map[int, string]();
+map.VerifyTree();
+map.Add(0, "Zero");
+map.VerifyTree();
+map.Add(3, "Three");
+map.VerifyTree();
+map.Add(-19, "Negative nineteen");
+map.VerifyTree();
+map.Add(-4, "Negative four");
+map.VerifyTree();
+map.Add(17, "Seventeen");
+map.VerifyTree();
+map.Add(6, "Six");
+map.VerifyTree();
+map.Add(12, "Twelve");
+map.VerifyTree();
+map.Add(-2, "Negative two");
+map.VerifyTree();
+
+>> "Loop 1:";
+for (key, value) in map {
+	>> " Got: ", key, " - ", value;
+}
+
+map.Remove(-4, 3, 17);
+map.VerifyTree();
+>> "Loop 2:";
+for (key, value) in map {
+	>> " Got: ", key, " - ", value;
+}
+
+try {
+	map.Add(0, "-Zero");
+} catch (Core.Exception e) {
+	>> "Caught: ", e.ToString();
+}
+map(0) = "-Zero";
+>> "That was fine, though";
+try {
+	var @bool = map.Remove(99);
+	>> "Remove got: ", @bool;
+} catch (Core.Exception e) {
+	>> "Caught: ", e.ToString();
+}
+
+
+struct S {
+    int Field;
+	fcn new { Field };
+
+    override fcn ToString() -> string {
+        return "S: " + Field;
+    }
+	static fcn ==(S s1, S s2) -> bool {
+		return s1.Field == s2.Field;
+	}
+}
+struct SComparer : KLess[S] {
+    static fcn Compare(S s1, S s2) -> bool {
+        return s1.Field < s2.Field;
+    }
+}
+
+smap = Map[S, string, SComparer]();
+>> "Victoire!";
+var s1 = S(1);
+var s4 = S(4);
+var sm9 = S(-9);
+var sm3 = S(-3);
+var s3 = S(3);
+smap.Add(s1, "<S: 1>");
+smap.Add(s4, "<S: 4>");
+smap.Add(sm9, "<S: -9>");
+smap.Add(sm3, "<S: -3>");
+smap.Add(s3, "<S: 3>");
+>> "Loop 3:";
+for (key, value) in smap {
+	>> " Got: ", key, " - ", value;
+}
+
+smap.Remove(S(1), S(4));
+>> "Loop 4:";
+for (key, value) in smap {
+	>> " Got: ", key, " - ", value;
+}
+
+>> "Should be false: ", smap.ContainsValue("Tim", "Forza");
+>> "Should be true: ", smap.ContainsValue("Tim", "<S: -3>", "Forza");
+
+
